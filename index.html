@@ -1,0 +1,2242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>驼峰调车智能优化平台 · SwitchYard</title>
+<style>
+/* ============ SwitchYard 风格主题（Tailwind 蓝色系） ============ */
+:root{
+  --primary:#2563eb; --primary-600:#1d4ed8; --primary-700:#1e40af;
+  --primary-50:#eef4ff; --primary-100:#dbe7ff; --primary-200:#c8d8ff;
+  --border:#e5e7eb; --border-light:#f1f5f9;
+  --text:#1f2937; --text-2:#6b7280; --text-3:#9ca3af;
+  --success:#16a34a; --success-bg:#ecfdf5;
+  --warning:#d97706; --warning-bg:#fffbeb;
+  --danger:#dc2626; --danger-bg:#fef2f2;
+  --violet:#7c3aed; --teal:#0f766e; --amber:#d97706;
+  --bg:#f8fafc; --card:#ffffff;
+  --radius:10px; --shadow:0 1px 2px rgba(15,23,42,.06),0 4px 12px rgba(15,23,42,.06);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei","PingFang SC",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--primary);text-decoration:none}
+
+/* 顶部 */
+.app-header{background:linear-gradient(120deg,#1e3a8a 0%,#1d4ed8 55%,#2563eb 100%);color:#fff;padding:0 28px;position:sticky;top:0;z-index:50;box-shadow:0 2px 10px rgba(29,78,216,.28)}
+.app-header .bar{display:flex;align-items:center;height:56px;gap:14px}
+.brand{display:flex;align-items:center;gap:11px}
+.brand .logo{width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;letter-spacing:.5px;border:1px solid rgba(255,255,255,.28)}
+.brand .t1{font-weight:700;font-size:16px;letter-spacing:.5px}
+.brand .t2{font-size:11.5px;opacity:.82;margin-left:10px;padding-left:10px;border-left:1px solid rgba(255,255,255,.3)}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12.5px;opacity:.92}
+.badge{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:3px 12px;font-size:12px}
+.header-sub{background:rgba(255,255,255,.06);border-top:1px solid rgba(255,255,255,.12);padding:7px 28px;font-size:12.5px;opacity:.9}
+
+/* 布局 */
+.wrap{max-width:1440px;margin:0 auto;padding:18px 24px 40px}
+/* 标签页 */
+.tabs{display:flex;gap:2px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:4px;margin:18px 0 0;overflow-x:auto;box-shadow:var(--shadow);position:sticky;top:72px;z-index:40}
+.tab{flex:1;min-width:118px;text-align:center;padding:11px 6px;border-radius:7px;cursor:pointer;color:var(--text-2);font-weight:600;font-size:13.5px;white-space:nowrap;transition:.18s;border:1px solid transparent;position:relative}
+.tab:hover{background:var(--primary-50);color:var(--primary-600)}
+.tab.active{background:var(--primary);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.35)}
+.tab .num{display:inline-block;min-width:18px;height:18px;line-height:18px;border-radius:5px;background:rgba(37,99,235,.12);color:var(--primary-600);font-size:11px;margin-right:5px;font-weight:700}
+.tab.active .num{background:rgba(255,255,255,.25);color:#fff}
+.panel{display:none;animation:fade .25s}
+.panel.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* 卡片 */
+.grid{display:grid;gap:16px}
+.cols-2{grid-template-columns:1fr 1fr}
+.cols-3{grid-template-columns:repeat(3,1fr)}
+.cols-4{grid-template-columns:repeat(4,1fr)}
+.plan-chart{grid-column:span 2}
+@media(max-width:1080px){.cols-2,.cols-3,.cols-4{grid-template-columns:1fr}.plan-chart{grid-column:auto}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow)}
+.card h3{font-size:15px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.card h3 .dot{width:8px;height:8px;border-radius:50%;background:var(--primary);flex:none}
+.card .sub{font-size:12.5px;color:var(--text-2);margin-bottom:14px}
+.card h4{font-size:13px;font-weight:700;color:var(--text);margin:16px 0 8px}
+.section-title{font-size:17px;font-weight:800;margin:22px 0 12px;display:flex;align-items:center;gap:9px}
+.section-title .bar{width:4px;height:20px;border-radius:3px;background:linear-gradient(var(--primary),var(--primary-600))}
+
+/* 表单 */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--text-2);margin-bottom:5px}
+.field label .req{color:var(--danger)}
+.inp,.sel{width:100%;height:36px;padding:0 11px;border:1px solid var(--border);border-radius:7px;font-size:13.5px;color:var(--text);background:#fff;transition:.15s;font-family:var(--font)}
+.inp:focus,.sel:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-100)}
+.sel{cursor:pointer}
+.unit{color:var(--text-3);font-size:12px;margin-left:3px}
+.hint{font-size:11.5px;color:var(--text-3);margin-top:4px}
+.algo-note{margin-top:12px;border:1px solid var(--primary-100);background:var(--primary-50);border-radius:8px;padding:11px 13px;font-size:12px;color:var(--text-2);line-height:1.75}
+.algo-note .t{font-weight:700;color:var(--primary-700);font-size:12.5px;margin-bottom:4px}
+.algo-note .it{margin-top:3px}
+.algo-note .it b{color:var(--text)}
+.algo-note .tip{margin-top:7px;padding-top:7px;border-top:1px dashed var(--primary-200);color:var(--text-2)}
+.row{display:flex;gap:12px}
+.row .field{flex:1}
+.inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* 按钮 */
+.btn{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 18px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--text);font-size:13.5px;font-weight:600;cursor:pointer;transition:.16s;font-family:var(--font)}
+.btn:hover{border-color:var(--primary);color:var(--primary)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{background:var(--primary-600)}
+.btn.primary:disabled{background:#a5b8e8;border-color:#a5b8e8;cursor:not-allowed}
+.btn.success{background:var(--success);border-color:var(--success);color:#fff}
+.btn.ghost{background:var(--primary-50);border-color:var(--primary-100);color:var(--primary-600)}
+.btn.lg{height:42px;padding:0 26px;font-size:14.5px}
+.btn.sm{height:28px;padding:0 12px;font-size:12.5px}
+.btn.danger{color:var(--danger);border-color:#fecaca;background:#fff}
+.btn.danger:hover{background:var(--danger-bg);border-color:var(--danger);color:var(--danger)}
+
+/* 结果存档列表 */
+.hist-item{border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:#fff}
+.hist-item + .hist-item{margin-top:10px}
+.hist-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hist-label{font-weight:700;color:var(--text);font-size:13.5px}
+.hist-time{margin-left:auto;font-size:11.5px;color:var(--text-2)}
+.hist-metrics{font-size:12.5px;color:var(--text-2);margin-top:6px;line-height:1.6}
+.hist-metrics b{color:var(--text);font-weight:700}
+.hist-ops{display:flex;gap:8px;margin-top:10px}
+.empty{color:var(--text-2);font-size:13px;padding:22px 8px;text-align:center;border:1px dashed var(--border);border-radius:9px}
+
+/* 复选框目标卡片 */
+.obj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px}
+.obj-card{border:1.5px solid var(--border);border-radius:9px;padding:12px 13px;cursor:pointer;transition:.15s;background:#fff;position:relative}
+.obj-card:hover{border-color:var(--primary-200)}
+.obj-card.on{border-color:var(--primary);background:var(--primary-50)}
+.obj-card .ck{position:absolute;top:10px;right:11px;width:17px;height:17px;border-radius:5px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;transition:.15s}
+.obj-card.on .ck{background:var(--primary);border-color:var(--primary)}
+.obj-card .nm{font-weight:700;font-size:13.5px}
+.obj-card .ds{font-size:11.5px;color:var(--text-2);margin-top:3px}
+.obj-card .tag{display:inline-block;font-size:10.5px;margin-top:6px;padding:1px 8px;border-radius:10px;font-weight:600}
+.tag.min{background:var(--danger-bg);color:var(--danger)}
+.tag.max{background:var(--success-bg);color:var(--success)}
+.obj-card .grp{display:inline-block;font-size:10px;margin-top:6px;margin-left:5px;padding:1px 7px;border-radius:10px;font-weight:600}
+.obj-card .grp-eco{background:#fef3c7;color:#b45309}
+.obj-card .grp-perf{background:#dbeafe;color:#1d4ed8}
+.obj-card .cf{font-size:10.5px;color:var(--danger);margin-top:5px;line-height:1.35}
+
+/* 指标卡 */
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.stat .k{font-size:12px;color:var(--text-2);font-weight:600}
+.stat .v{font-size:24px;font-weight:800;margin-top:4px;letter-spacing:-.5px}
+.stat .v small{font-size:12px;font-weight:600;color:var(--text-3);margin-left:2px}
+.stat .bar-inline{position:absolute;left:0;top:0;bottom:0;width:3px}
+.stat.blue .bar-inline{background:var(--primary)} .stat.blue .v{color:var(--primary-600)}
+.stat.green .bar-inline{background:var(--success)} .stat.green .v{color:var(--success)}
+.stat.amber .bar-inline{background:var(--warning)} .stat.amber .v{color:var(--warning)}
+.stat.violet .bar-inline{background:var(--violet)} .stat.violet .v{color:var(--violet)}
+.stat.teal .bar-inline{background:var(--teal)} .stat.teal .v{color:var(--teal)}
+
+/* 进度条 */
+.progress{height:8px;background:var(--border-light);border-radius:6px;overflow:hidden;flex:1}
+.progress .fill{height:100%;background:linear-gradient(90deg,var(--primary),#4f46e5);border-radius:6px;transition:width .15s;width:0%}
+
+/* 表格 */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--border-light)}
+th{font-size:12px;color:var(--text-2);font-weight:700;background:var(--bg);white-space:nowrap}
+tr:hover td{background:#fbfdff}
+td.num{font-variant-numeric:tabular-nums;font-weight:600}
+tr.selected td{background:var(--primary-50)!important}
+.badge-row{display:inline-block;padding:2px 9px;border-radius:12px;font-size:11.5px;font-weight:600}
+.badge.ok{background:var(--success-bg);color:var(--success)}
+.badge.warn{background:var(--warning-bg);color:var(--warning)}
+.badge.bad{background:var(--danger-bg);color:var(--danger)}
+.badge.info{background:var(--primary-50);color:var(--primary-600)}
+
+/* 图表容器 */
+.chart-box{width:100%;border:1px solid var(--border-light);border-radius:8px;background:#fff;overflow:hidden}
+.chart-box svg{display:block;width:100%;height:auto}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin-top:8px}
+.legend .li{display:flex;align-items:center;gap:6px}
+.legend .sw{width:14px;height:3px;border-radius:2px;display:inline-block}
+
+/* 校核清单 */
+.check-item{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border:1px solid var(--border-light);border-radius:8px;margin-bottom:7px;background:#fff}
+.check-item .ico{width:20px;height:20px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;margin-top:1px}
+.check-item.ok .ico{background:var(--success)}
+.check-item.bad .ico{background:var(--danger)}
+.check-item.warn .ico{background:var(--warning)}
+.check-item .ct{flex:1}
+.check-item .ct .nm{font-weight:600;font-size:13px}
+.check-item .ct .vl{font-size:11.5px;color:var(--text-2);margin-top:1px}
+.check-item.ok{border-left:3px solid var(--success)}
+.check-item.bad{border-left:3px solid var(--danger)}
+.check-item.warn{border-left:3px solid var(--warning)}
+
+/* 结论框 */
+.conclusion{border-radius:9px;padding:14px 16px;font-size:13px;margin-top:12px;border:1px solid}
+.conclusion.info{background:var(--primary-50);border-color:var(--primary-100);color:#1e3a8a}
+.conclusion.warn{background:var(--warning-bg);border-color:#fde68a;color:#92400e}
+.conclusion.danger{background:var(--danger-bg);border-color:#fecaca;color:#991b1b}
+.conclusion strong{font-weight:800}
+
+/* 页脚 */
+.footer{margin-top:34px;padding:20px 24px;border-top:1px solid var(--border);color:var(--text-3);font-size:12px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.footer b{color:var(--text-2)}
+.footer .tag{display:inline-block;padding:2px 9px;border-radius:10px;background:var(--primary-50);color:var(--primary-600);font-size:11px;margin-right:6px;font-weight:600}
+
+.toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.spacer{flex:1}
+.muted{color:var(--text-3);font-size:12px}
+.mt{margin-top:14px}.mt2{margin-top:20px}
+.divider{height:1px;background:var(--border);margin:18px 0}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
+.pill.blue{background:var(--primary-50);color:var(--primary-700)}
+code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px;padding:1px 6px;font-size:12px;font-family:ui-monospace,Consolas,monospace;color:var(--violet)}
+
+/* 封面页 */
+.cover{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:radial-gradient(1200px 600px at 20% -10%,#2f4fb0 0%,transparent 60%),radial-gradient(1000px 700px at 100% 110%,#16306e 0%,transparent 55%),linear-gradient(135deg,#0f1f4d 0%,#1e3a8a 34%,#1d4ed8 70%,#2563eb 100%);color:#fff;overflow:auto;transition:opacity .45s ease,visibility .45s}
+.cover.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.cover-inner{max-width:920px;width:92%;padding:52px 20px;text-align:center}
+.cover-logo{width:78px;height:78px;border-radius:18px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:30px;letter-spacing:1px;margin:0 auto 22px;box-shadow:0 12px 32px rgba(0,0,0,.28)}
+.cover h1{font-size:36px;font-weight:800;letter-spacing:1px;margin-bottom:12px;line-height:1.25}
+.cover .tagline{font-size:15px;opacity:.86;margin-bottom:30px}
+.cover-desc{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:22px 26px;text-align:left;font-size:14px;line-height:1.9;color:rgba(255,255,255,.93);margin-bottom:26px;backdrop-filter:blur(4px)}
+.cover-desc b{color:#fff;font-weight:700}
+.cover-feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px;margin-bottom:34px;text-align:left}
+.cover-feat{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:11px 14px}
+.cover-feat .n{font-weight:700;font-size:13px;color:#fff;display:flex;align-items:center;gap:7px}
+.cover-feat .n span{width:20px;height:20px;border-radius:6px;background:rgba(255,255,255,.16);display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex:none}
+.cover-feat .d{font-size:11.5px;color:rgba(255,255,255,.74);margin-top:3px;line-height:1.55}
+.cover-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.cover-btn{display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 30px;border-radius:10px;font-size:15.5px;font-weight:700;cursor:pointer;transition:.18s;font-family:var(--font);border:1px solid transparent}
+.cover-btn.enter{background:#fff;color:var(--primary-700)}
+.cover-btn.enter:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,.3)}
+.cover-btn.src{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.32)}
+.cover-btn.src:hover{background:rgba(255,255,255,.22)}
+.cover-foot{margin-top:32px;font-size:12px;opacity:.6;line-height:1.7}
+
+/* 源代码弹窗 */
+.modal-backdrop{position:fixed;inset:0;z-index:1200;background:rgba(15,23,42,.64);display:none;align-items:center;justify-content:center;padding:24px}
+.modal-backdrop.show{display:flex}
+.modal{background:#fff;border-radius:14px;width:min(1000px,94vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.38)}
+.modal-head{display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid var(--border);flex:none}
+.modal-head h3{font-size:15px;font-weight:700;flex:1;display:flex;align-items:center;gap:8px}
+.modal-head .dot{width:8px;height:8px;border-radius:50%;background:var(--primary);flex:none}
+.modal-body{overflow:auto;background:#0f172a;flex:1}
+.modal-body pre{margin:0;padding:18px 20px;font-family:ui-monospace,Consolas,"Courier New",monospace;font-size:12px;line-height:1.6;color:#e2e8f0;white-space:pre;tab-size:2}
+.modal-foot{display:flex;align-items:center;gap:10px;padding:12px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--text-2);flex:none}
+.modal-foot .spacer{flex:1}
+@media(max-width:640px){.cover h1{font-size:26px}.cover-inner{padding:36px 14px}.cover-desc{font-size:13px}.cover-btn{height:44px;padding:0 22px;font-size:14.5px}}
+</style>
+</head>
+<body>
+
+<!-- ================= 封面页 ================= -->
+<div class="cover" id="cover">
+  <div class="cover-inner">
+    <div class="cover-logo">SY</div>
+    <h1>驼峰调车智能优化平台</h1>
+    <div class="tagline">铁路编组站驼峰纵断面与平面布置 · 多目标自动优化 · 方案一键生成</div>
+
+    <div class="cover-desc">
+      <b>平台简介：</b>驼峰调车是铁路编组站利用<b>驼峰高差</b>使车辆借助重力自动溜放、分解车列的一种高效调车方式。本平台针对驼峰<b>峰高与纵断面</b>（加速坡、中间坡、道岔区坡、打靶区）及<b>减速器 / 减速顶</b>配置进行<b>多目标自动优化</b>，帮助快速生成满足<b>难行车溜放到位、易行车安全连挂</b>约束的纵断面与平面展开方案。
+    </div>
+
+    <div class="cover-feats">
+      <div class="cover-feat"><div class="n"><span>1</span>设计输入</div><div class="d">三基准车（难/中/易行车）、股道数、阻力系数等参数</div></div>
+      <div class="cover-feat"><div class="n"><span>2</span>多目标优化</div><div class="d">PSO / ALNS / NSGA-II 自动寻优</div></div>
+      <div class="cover-feat"><div class="n"><span>3</span>平面展开图</div><div class="d">溜放线平面布置一键生成（道岔/减速器/曲线）</div></div>
+      <div class="cover-feat"><div class="n"><span>4</span>纵断面方案</div><div class="d">凹形「前陡后缓」纵断面与峰高设计</div></div>
+      <div class="cover-feat"><div class="n"><span>5</span>车流适应性</div><div class="d">蒙特卡洛模拟车流溜放与安全连挂</div></div>
+      <div class="cover-feat"><div class="n"><span>6</span>检算报告</div><div class="d">规范约束逐项自动校核</div></div>
+      <div class="cover-feat"><div class="n"><span>7</span>结果存档</div><div class="d">方案本地保存、导出与载入</div></div>
+    </div>
+
+    <div class="cover-actions">
+      <button class="cover-btn enter" id="btn-enter">进入平台 →</button>
+      <button class="cover-btn src" id="btn-src">查看源代码</button>
+    </div>
+
+    <div class="cover-foot">依据《铁路站场及枢纽》教材 &amp; TB 10062-2018 · 道岔位置固定布设、不参与优化</div>
+  </div>
+</div>
+
+<!-- ================= 源代码弹窗 ================= -->
+<div class="modal-backdrop" id="src-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="dot"></span><h3>网页源代码</h3>
+      <button class="btn sm" id="btn-copy">复制全部</button>
+      <button class="btn sm" id="btn-close-src">关闭</button>
+    </div>
+    <div class="modal-body"><pre id="src-code"></pre></div>
+    <div class="modal-foot"><span id="src-info"></span><span class="spacer"></span><span>当前网页完整源代码（HTML · 含内联样式与脚本）</span></div>
+  </div>
+</div>
+
+<div class="app-header">
+  <div class="bar">
+    <div class="brand">
+      <div class="logo">SY</div>
+      <div>
+        <div class="t1">SwitchYard</div>
+      </div>
+      <div class="t2">铁路站场与枢纽线上教学平台</div>
+    </div>
+    <div class="header-right">
+      <span class="badge">驼峰调车 · 智能设计</span>
+      <span class="badge">多目标优化引擎 v1.0</span>
+      <span class="badge" id="btn-src-header" style="cursor:pointer" title="查看网页源代码">查看源代码</span>
+    </div>
+  </div>
+  <div class="header-sub">驼峰调车智能优化平台 —— 纵断面多目标自动优化 · 方案一键生成 · 车流适应性分析（依据《铁路站场及枢纽》教材 &amp; TB10062-2018 规范）</div>
+</div>
+
+<div class="wrap">
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-panel="p-input"><span class="num">1</span>设计输入</div>
+    <div class="tab" data-panel="p-optimize"><span class="num">2</span>多目标优化</div>
+    <div class="tab" data-panel="p-plan"><span class="num">3</span>平面展开图</div>
+    <div class="tab" data-panel="p-profile"><span class="num">4</span>纵断面方案</div>
+    <div class="tab" data-panel="p-traffic"><span class="num">5</span>车流适应性</div>
+    <div class="tab" data-panel="p-check"><span class="num">6</span>检算报告</div>
+    <div class="tab" data-panel="p-history"><span class="num">7</span>结果存档</div>
+  </div>
+
+  <!-- ================= 1. 设计输入 ================= -->
+  <div class="panel active" id="p-input">
+    <div class="section-title"><span class="bar"></span>设计输入</div>
+    <div class="grid cols-2">
+      <div class="card">
+        <h3><span class="dot"></span>驼峰规模</h3>
+        <div class="sub">决定道岔数量、溜放线数量与配套设备等级</div>
+        <div class="row">
+          <div class="field">
+            <label>调车线数量</label>
+            <select class="sel" id="in-lines">
+              <option value="12">12 条（小能力）</option>
+              <option value="16" selected>16 条（小能力）</option>
+              <option value="24">24 条（中能力）</option>
+              <option value="32">32 条（大能力）</option>
+              <option value="36">36 条（大能力）</option>
+              <option value="48">48 条（大能力）</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>日解体量 <span class="unit">辆/日</span></label>
+            <input class="inp" id="in-daily" type="number" value="2000" min="200" step="100">
+          </div>
+          <div class="field">
+            <label>推峰机车台数</label>
+            <select class="sel" id="in-machines">
+              <option value="1">1 台（单推单溜）</option>
+              <option value="2" selected>2 台（双推单溜）</option>
+              <option value="3">3 台（双推单溜）</option>
+            </select>
+          </div>
+        </div>
+        <div class="hint">调车线 16 条 → 线束 2×8；自动推算逆向道岔数与曲线转角。</div>
+      </div>
+
+      <div class="card">
+        <h3><span class="dot"></span>气象条件</h3>
+        <div class="sub">控制峰高的两个极端工况：冬季溜得动、夏季不超速</div>
+        <div class="row">
+          <div class="field">
+            <label>建设地区</label>
+            <select class="sel" id="in-region">
+              <option value="华北" selected>华北</option>
+              <option value="东北">东北（寒冷）</option>
+              <option value="华东">华东</option>
+              <option value="华南">华南</option>
+              <option value="西北">西北（寒冷）</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>冬季计算气温 <span class="unit">℃</span></label>
+            <input class="inp" id="in-twinter" type="number" value="-10" step="1">
+          </div>
+          <div class="field">
+            <label>冬季计算风速 <span class="unit">m/s</span></label>
+            <input class="inp" id="in-vwind" type="number" value="4" min="0" max="5" step="0.5">
+          </div>
+        </div>
+        <div class="hint">夏季统一取 27℃、0 m/s（溜车有利条件，控制限速）。冬季取保证率 95% 低温大风。</div>
+      </div>
+    </div>
+
+    <div class="grid cols-2 mt">
+      <div class="card">
+        <h3><span class="dot"></span>车流组成（车流适应性）</h3>
+        <div class="sub">引入车流特点，评估非极端条件下的设计表现</div>
+        <div class="row">
+          <div class="field">
+            <label>空车比例 <span class="unit">%</span></label>
+            <input class="inp" id="in-empty" type="number" value="30" min="0" max="80" step="5">
+          </div>
+          <div class="field">
+            <label>重车比例 <span class="unit">%</span></label>
+            <input class="inp" id="in-heavy" type="number" value="70" min="0" max="100" step="5">
+          </div>
+          <div class="field">
+            <label>高峰系数 <span class="unit">倍</span></label>
+            <input class="inp" id="in-peak" type="number" value="1.3" min="1" max="2" step="0.1">
+          </div>
+        </div>
+        <div class="hint">空车 → 冬季难行车（易溜不到位）；重车 → 夏季易行车（易超速）。空重比改变将直接改变推峰速度与制动等级策略。</div>
+      </div>
+
+      <div class="card">
+        <h3><span class="dot"></span>地形限制 &amp; 溜放距离</h3>
+        <div class="sub">地形约束与纵断面总长度</div>
+        <div class="row">
+          <div class="field">
+            <label>最大峰高限制 <span class="unit">m</span></label>
+            <input class="inp" id="in-hmax" type="number" value="4.5" min="3" max="6" step="0.1">
+          </div>
+          <div class="field">
+            <label>最小峰高 <span class="unit">m</span></label>
+            <input class="inp" id="in-hmin" type="number" value="3.0" min="2" max="5" step="0.1">
+          </div>
+          <div class="field">
+            <label>溜放部分总长 <span class="unit">m</span></label>
+            <input class="inp" id="in-length" type="number" value="380" min="250" max="600" step="10">
+          </div>
+        </div>
+        <div class="hint">我国驼峰峰高一般 3.0～4.0 m，北方寒冷地区比南方高 0.5～1.0 m。</div>
+      </div>
+    </div>
+
+    <div class="card mt">
+      <h3><span class="dot"></span>车型管理（难 / 中 / 易行车基准参数）</h3>
+      <div class="sub">用于溜放仿真的「三基准车」参数，可编辑；总重 = 自重 + 载重。修改后自动重算方案</div>
+      <div class="grid cols-3" id="vehicles-grid"></div>
+      <div class="hint">难行车（空车冬季，控制峰高，溜不到位风险）· 中行车（典型设计参考）· 易行车（重车夏季，控制限速，超速风险）。参数依据《铁路站场及枢纽》教材 4-1 节。</div>
+    </div>
+
+    <div class="card mt">
+      <h3><span class="dot"></span>道岔与曲线阻力参数</h3>
+      <div class="sub">阻力功折算系数与道岔类型数量（<b>道岔位置固定</b>，不纳入优化变量；逆向道岔数与曲线转角随规模自动推算）</div>
+      <div class="grid cols-4">
+        <div class="field"><label>顺向道岔数 <span class="unit">组</span></label><input class="inp" id="in-nfwd" type="number" value="0" min="0" max="40" step="1"></div>
+        <div class="field"><label>菱形交叉数 <span class="unit">组</span></label><input class="inp" id="in-ndia" type="number" value="0" min="0" max="40" step="1"></div>
+        <div class="field"><label>交分道岔数 <span class="unit">组</span></label><input class="inp" id="in-nslip" type="number" value="0" min="0" max="40" step="1"></div>
+        <div class="field"><label>曲线阻力系数 <span class="unit">N·m/kN·°</span></label><input class="inp" id="in-ccurve" type="number" value="8" min="0" step="0.5"></div>
+        <div class="field"><label>逆向道岔阻力系数 <span class="unit">N·m/kN</span></label><input class="inp" id="in-crev" type="number" value="24" min="0" step="1"></div>
+        <div class="field"><label>顺向道岔阻力系数 <span class="unit">N·m/kN</span></label><input class="inp" id="in-cfwd" type="number" value="12" min="0" step="1"></div>
+        <div class="field"><label>菱形交叉阻力系数 <span class="unit">N·m/kN</span></label><input class="inp" id="in-cdia" type="number" value="12" min="0" step="1"></div>
+        <div class="field"><label>交分道岔阻力系数 <span class="unit">N·m/kN</span></label><input class="inp" id="in-cslip" type="number" value="48" min="0" step="1"></div>
+      </div>
+      <div class="hint">道岔阻力功 E_s = 逆向·N逆 + 顺向·(N顺+N菱) + 交分·N交分；曲线阻力功 E_c = 8·θ总。默认系数取自教材/北交大参考值（逆向 24、顺向 12、菱形 12、交分 48 N·m/kN，曲线 8 N·m/kN·°），可编辑以便与规范核对。</div>
+    </div>
+
+    <div class="card mt">
+      <h3><span class="dot"></span>优化设置</h3>
+      <div class="sub">经济性目标（成本最低、设备最少）与性能目标（解体能力、连挂率、可靠性）相互矛盾，不能同时选择；同类目标之间不互斥</div>
+      <div class="obj-grid" id="obj-grid"></div>
+      <div class="divider"></div>
+      <div class="row">
+        <div class="field">
+          <label>坡段数量（变坡点数量）</label>
+          <select class="sel" id="in-segments">
+            <option value="3">3 段（加速坡 / 道岔区坡 / 打靶区）</option>
+            <option value="4" selected>4 段（+中间坡，推荐）</option>
+            <option value="5">5 段（+两个中间坡）</option>
+            <option value="6">6 段（+三个中间坡）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>种群规模</label>
+          <input class="inp" id="in-pop" type="number" value="50" min="20" max="300" step="10">
+        </div>
+        <div class="field">
+          <label>迭代次数</label>
+          <input class="inp" id="in-iter" type="number" value="60" min="10" max="400" step="10">
+        </div>
+        <div class="field">
+          <label>算法</label>
+          <select class="sel" id="in-algo">
+            <option value="mopso" selected>MOPSO 多目标粒子群</option>
+            <option value="nsga2">NSGA-II 多目标遗传算法</option>
+            <option value="alns">ALNS 自适应大邻域搜索</option>
+          </select>
+        </div>
+      </div>
+      <div class="hint">
+        优化变量：<b>峰高 H</b>、<b>各变坡点横向坐标 x</b>、<b>各变坡点高度 h</b>（<b>道岔位置固定</b>，不纳入优化变量）。支持 MOPSO / NSGA-II / ALNS 三种多目标算法，适配连续纵断面变量。
+      </div>
+      <div class="algo-note">
+        <div class="t">三种算法的适用条件</div>
+        <div class="it"><b>MOPSO 粒子群</b>：连续变量、收敛快、易早熟 —— 适合快速出一组 Pareto 解做<b>初步比选</b>。</div>
+        <div class="it"><b>NSGA-II 遗传算法</b>：全局搜索强、多样性好、计算量大 —— 适合<b>复杂非线性 / 多峰</b>、追求前沿完整。</div>
+        <div class="it"><b>ALNS 大邻域搜索</b>：局部破坏-修复、算子自适应 —— 适合<b>已有较好初始解</b>后精调逼近最优。</div>
+        <div class="tip">建议：无现成方案先点「生成初始方案」，再用 <b>MOPSO / NSGA-II</b> 全局搜；拿到初解后用 <b>ALNS</b> 精修。</div>
+      </div>
+      <div class="toolbar mt">
+        <button class="btn ghost" id="btn-init">生成初始方案（规范模板）</button>
+        <button class="btn primary lg" id="btn-run">开始多目标优化</button>
+        <span class="muted" id="input-status">就绪</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 2. 多目标优化 ================= -->
+  <div class="panel" id="p-optimize">
+    <div class="section-title"><span class="bar"></span>多目标自动优化引擎（MOPSO）</div>
+    <div class="card">
+      <div class="toolbar">
+        <button class="btn primary lg" id="btn-run2">开始优化</button>
+        <button class="btn" id="btn-stop">停止</button>
+        <div class="progress" style="max-width:320px"><div class="fill" id="opt-progress"></div></div>
+        <span class="muted" id="opt-status">等待开始…</span>
+      </div>
+      <div class="grid cols-4 mt">
+        <div class="stat blue"><span class="bar-inline"></span><div class="k">已评估方案数</div><div class="v" id="st-eval">0</div></div>
+        <div class="stat violet"><span class="bar-inline"></span><div class="k">Pareto 最优解数</div><div class="v" id="st-nd">0</div></div>
+        <div class="stat green"><span class="bar-inline"></span><div class="k">最优目标①</div><div class="v" id="st-obj1">—</div></div>
+        <div class="stat teal"><span class="bar-inline"></span><div class="k">最优目标②</div><div class="v" id="st-obj2">—</div></div>
+      </div>
+    </div>
+
+    <div class="grid cols-2 mt">
+      <div class="card">
+        <h3><span class="dot"></span>Pareto 前沿（目标空间）</h3>
+        <div class="sub">横轴=目标①（越小越优）· 纵轴=目标②（越大越优）· 点击散点切换方案</div>
+        <div class="chart-box" id="chart-pareto"></div>
+        <div class="legend" id="legend-pareto"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>收敛曲线</h3>
+        <div class="sub">Pareto 解数量随迭代次数的增长</div>
+        <div class="chart-box" id="chart-conv"></div>
+      </div>
+    </div>
+
+    <div class="card mt">
+      <h3><span class="dot"></span>Pareto 最优方案集</h3>
+      <div class="sub">点击行选中方案，联动「纵断面方案」「检算报告」标签页</div>
+      <div style="max-height:420px;overflow:auto">
+        <table id="pareto-table">
+          <thead><tr id="pareto-head"></tr></thead>
+          <tbody id="pareto-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 3. 平面展开图 ================= -->
+  <div class="panel" id="p-plan">
+    <div class="section-title"><span class="bar"></span>平面展开图</div>
+    <div class="card">
+      <div class="sub">一键生成溜放线平面展开示意：控制点取自当前方案的纵断面变坡点（切换方案自动更新），道岔 / 减速器按固定制动位布设、不参与优化。</div>
+      <div class="grid cols-3">
+        <div class="card plan-chart">
+          <h3><span class="dot"></span>平面展开图</h3>
+          <div class="sub">横向为里程方向；深蓝斜线为分路道岔，绿色矩形为减速器，蓝色数字为曲线转角</div>
+          <div class="chart-box" id="chart-plan"></div>
+          <div class="legend" id="legend-plan"></div>
+        </div>
+        <div class="card">
+          <h3><span class="dot"></span>平面要素</h3>
+          <div id="plan-summary"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 4. 纵断面方案 ================= -->
+  <div class="panel" id="p-profile">
+    <div class="section-title"><span class="bar"></span>纵断面方案</div>
+    <div class="card">
+      <div class="toolbar">
+        <label style="font-weight:600;font-size:13px">查看方案：</label>
+        <select class="sel" id="profile-select" style="width:280px"></select>
+        <span class="muted" id="profile-src">来源：初始方案</span>
+      </div>
+      <div class="grid cols-4" id="profile-stats"></div>
+    </div>
+    <div class="grid cols-2 mt">
+      <div class="card">
+        <h3><span class="dot"></span>纵断面图（前陡后缓凹形）</h3>
+        <div class="sub">高程—里程；红点为变坡点，标注坡段坡度</div>
+        <div class="chart-box" id="chart-profile"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>坡段参数表</h3>
+        <div class="sub">各坡段长度、坡度、变坡点高程</div>
+        <div style="max-height:380px;overflow:auto">
+          <table id="profile-table">
+            <thead><tr><th>坡段</th><th>性质</th><th>长度(m)</th><th>坡度(‰)</th><th>起点高程(m)</th><th>终点高程(m)</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt">
+      <h3><span class="dot"></span>能高线分析（能高法）</h3>
+      <div class="sub">难行车·冬季（自由溜放 v推=1.4 m/s）的能高平衡：总能高 = 初始动能高 + 峰高势能；阻力能高 = 基本 + 风 + 道岔 + 曲线 四部分累计；动能高 = 总能高 − 阻力能高（对应溜放末速）</div>
+      <div class="grid cols-2">
+        <div>
+          <div class="chart-box" id="chart-energy"></div>
+          <div class="legend" id="legend-energy"></div>
+        </div>
+        <div id="energy-breakdown"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 5. 车流适应性 ================= -->
+  <div class="panel" id="p-traffic">
+    <div class="section-title"><span class="bar"></span>车流适应性分析</div>
+    <div class="card">
+      <div class="sub">传统设计只保证最不利条件（极端车）。车流适应性：引入空重车比例，看「仅满足典型条件」的设计在偏离极端条件时会发生什么。</div>
+      <div class="toolbar">
+        <label style="font-weight:600">空车比例：</label>
+        <input type="range" id="traffic-empty" min="0" max="80" value="30" style="flex:1;max-width:320px">
+        <span class="pill blue" id="traffic-empty-val">30%</span>
+        <button class="btn ghost" id="btn-traffic-run">重新仿真</button>
+      </div>
+    </div>
+    <div class="grid cols-2 mt">
+      <div class="card">
+        <h3><span class="dot"></span>车流重量分布</h3>
+        <div class="sub">空车（棚车 ~25t）与重车（敞车 ~88t）的双峰分布</div>
+        <div class="chart-box" id="chart-traffic-hist"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>当前方案的溜放结果</h3>
+        <div class="sub">溜放到位率 / 安全连挂率 / 超速率 随空车比例变化</div>
+        <div class="chart-box" id="chart-traffic-curve"></div>
+        <div class="legend" id="legend-traffic"></div>
+      </div>
+    </div>
+    <div class="card mt">
+      <h3><span class="dot"></span>极端设计 vs 典型设计：非极端条件下的风险对比</h3>
+      <div class="sub">极端设计=保证空车冬季溜到位+重车夏季不超速（当前方案）；典型设计=仅按中行车设计（峰高低、减速器少、成本低）</div>
+      <div class="chart-box" id="chart-traffic-risk"></div>
+      <div class="legend" id="legend-risk"></div>
+      <div class="conclusion info mt" id="traffic-conclusion"></div>
+    </div>
+  </div>
+
+  <!-- ================= 6. 检算报告 ================= -->
+  <div class="panel" id="p-check">
+    <div class="section-title"><span class="bar"></span>检算报告</div>
+    <div class="grid cols-2">
+      <div class="card">
+        <h3><span class="dot"></span>溜放速度曲线</h3>
+        <div class="sub">难行车·冬季（自由溜放，v推=1.4 m/s）vs 易行车·夏季（v推=1.9 m/s）</div>
+        <div class="chart-box" id="chart-speed"></div>
+        <div class="legend" id="legend-speed"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>规范条文校核</h3>
+        <div class="sub">实时检查 TB10062-2018 与教材强制条文</div>
+        <div id="check-list"></div>
+      </div>
+    </div>
+    <div class="grid cols-2 mt">
+      <div class="card">
+        <h3><span class="dot"></span>间隔检算 &amp; 能力估算</h3>
+        <div id="check-capacity"></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>设计结论与改进建议</h3>
+        <div id="check-advice"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 7. 结果存档 ================= -->
+  <div class="panel" id="p-history">
+    <div class="section-title"><span class="bar"></span>结果存档</div>
+    <div class="card">
+      <div class="sub">每次「生成初始方案」或「多目标优化」完成后，结果会自动保存在本机浏览器；可载入查看、删除，或导出为 JSON 文件与队友共享。</div>
+      <div class="toolbar">
+        <button class="btn primary" id="btn-save-current">保存当前方案</button>
+        <button class="btn ghost" id="btn-export-history">导出全部</button>
+        <button class="btn ghost" id="btn-import-history">导入</button>
+        <button class="btn ghost" id="btn-clear-history">清空全部</button>
+        <input type="file" id="file-import" accept=".json,application/json" style="display:none">
+      </div>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div>
+      <b>知识来源：</b>
+      <span class="tag">《铁路站场及枢纽》教材·第四篇 P178–P239</span>
+      <span class="tag">TB10062-2018 规范</span>
+      <span class="tag">《调车驼峰知识点全解》</span>
+    </div>
+    <div>本页为教学演示与数值实验原型，成本/能力为<code>估算值</code>，正式设计请以规范全文与工程定额校准。</div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+ * 驼峰调车智能优化平台  ——  核心计算与优化引擎（纯 JS，零依赖）
+ * 公式编号对应《铁路站场及枢纽》教材（第四篇 P178-P239）
+ * ===================================================================== */
+
+/* ---------- 工具 ---------- */
+function clamp(v,a,b){return v<a?a:(v>b?b:v)}
+function fmt(v,d){ d=(d==null?2:d); return (Math.round(v*Math.pow(10,d))/Math.pow(10,d)).toLocaleString('zh-CN',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function $(id){return document.getElementById(id)}
+function toast(msg){
+  let t=$('toast'); if(!t){ t=document.createElement('div'); t.id='toast'; t.style.cssText='position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:rgba(17,24,39,.93);color:#fff;padding:11px 20px;border-radius:9px;font-size:13px;line-height:1.5;z-index:9999;max-width:82vw;text-align:center;transition:opacity .25s;'; document.body.appendChild(t); }
+  t.textContent=msg; t.style.opacity='1';
+  clearTimeout(toast._t); toast._t=setTimeout(()=>{t.style.opacity='0';},2400);
+}
+function esc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+
+/* ---------- 物理常数与基准车（教材 4-1 节） ---------- */
+const G = 9.8;
+/* 三基准车参数（可编辑，见「车型管理」卡片）：Q 总重(t)、f 迎风面积(m²)、n 轴数 */
+let VEHICLES = {
+  easy:   { name:'易行车', type:'C70 敞车(满载)', Q:94, f:7.71,  n:4, sigma:-1 },
+  medium: { name:'中行车', type:'C70 敞车(不满载)', Q:70, f:7.71, n:4, sigma:0 },
+  hard:   { name:'难行车', type:'P70H 棚车(不满载)', Q:30, f:11.41, n:4, sigma:1 },
+};
+/* 考虑车轮转动惯量的重力加速度  g' = g/(1+0.42n/Q)   (4-1-2) */
+function gPrime(Q,n){ return G/(1+0.42*n/Q); }
+/* 空气密度随温度：0.1MPa、0℃ 为 0.125 kg·s²/m⁴，温度越低密度越大 */
+function airDensity(t){ return 0.125*(273.15/(273.15+t)); }
+
+/* 基本阻力离散度均方差 σ（4-1-7） */
+function sigmaBase(Q,t){
+  return 0.602 - (0.0012 + 0.00002*Q)*t - 0.003*Q + 0.00002*t*t;
+}
+/* 滚动轴承货车单位基本阻力（4-1-7，溜放部分 k=0）：
+   r基 = 2.439 + (0.00008Q−0.01743)t − 0.015Q + 0.00017t² + 0.1v ± 1.65σ + 0.39
+   难行车取「+」，中行车取 0，易行车取「−」（σ 为离散度均方差） */
+function baseResistance(veh,t,v){
+  const Q=veh.Q, sgn=veh.sigma||0;
+  return 2.439 + (0.00008*Q - 0.01743)*t - 0.015*Q + 0.00017*t*t + 0.1*v + sgn*1.65*sigmaBase(Q,t) + 0.39;
+}
+/* 单位风阻力（4-1-8，正面逆风取 +） */
+function windResistance(Q,f,v,vwind,rho){
+  return rho*f*Math.pow(v + vwind, 2)/(2*Q);
+}
+
+/* ---------- 纵断面表示 ---------- */
+/* 纵断面 = 变坡点数组 [{x, h}]，x 为里程(m，0=峰顶)，h 为高程(m，峰顶处=H，计算点处=0) */
+function segmentsOf(prof){
+  const segs=[];
+  for(let j=0;j<prof.length-1;j++){
+    const a=prof[j], b=prof[j+1];
+    const len=b.x-a.x, drop=a.h-b.h;
+    const grade = len>0 ? drop/len*1000 : 0; // ‰，正=下坡
+    segs.push({x0:a.x,x1:b.x,len,grade,h0:a.h,h1:b.h});
+  }
+  return segs;
+}
+function heightAt(prof,x){
+  const segs=segmentsOf(prof);
+  if(x<=segs[0].x0) return prof[0].h;
+  if(x>=segs[segs.length-1].x1) return prof[prof.length-1].h;
+  for(const s of segs){ if(x>=s.x0 && x<=s.x1){ const f=(x-s.x0)/s.len; return s.h0 + f*(s.h1-s.h0);} }
+  return 0;
+}
+/* 折返到 x 处的速度（线性插值） */
+function speedAt(pts,x){
+  if(!pts.length) return 0;
+  if(x<=pts[0].x) return pts[0].v;
+  if(x>=pts[pts.length-1].x) return pts[pts.length-1].v;
+  for(let i=0;i<pts.length-1;i++){
+    if(x>=pts[i].x && x<=pts[i+1].x){ const f=(x-pts[i].x)/(pts[i+1].x-pts[i].x); return pts[i].v+f*(pts[i+1].v-pts[i].v); }
+  }
+  return 0;
+}
+
+/* ---------- 道岔/曲线阻力功（能高法折算 4-4-1） ---------- */
+/* 道岔阻力功 E_s = c逆·N逆 + c顺·(N顺+N菱) + c交分·N交分  (N·m/kN，默认 24/12/12/48) */
+function switchWork(cond,j){
+  const c=cond.coef||{rev:24,fwd:12,dia:12,slip:48};
+  const g=k=>cond[k]?(cond[k][j]||0):0;
+  return c.rev*g('nRev') + c.fwd*(g('nFwd')+g('nDia')) + c.slip*g('nSlip');
+}
+/* 曲线阻力功 E_c = c曲线·(θ曲+θ岔)  (N·m/kN，默认 8) */
+function curveWork(cond,j){
+  const c=(cond.coef&&cond.coef.curve!=null)?cond.coef.curve:8;
+  const th=cond.theta?(cond.theta[j]||0):0, thS=cond.thetaS?(cond.thetaS[j]||0):0;
+  return c*(th+thS);
+}
+
+/* ---------- 溜放运动仿真（能高线/速度递推 4-1-20） ---------- */
+/* cond: {t, vwind, rho, coef, nRev/nFwd/nDia/nSlip/theta/thetaS(各坡段数组), step} ; veh: 基准车 ; vpush: 推峰速度 */
+function simulate(prof, veh, cond, vpush){
+  const segs=segmentsOf(prof);
+  const gp=gPrime(veh.Q, veh.n);
+  const step=cond.step||1.0;
+  const pts=[{x:0, v:vpush, h:prof[0].h}];
+  let v=vpush, x=0;
+  for(let j=0;j<segs.length;j++){
+    const s=segs[j];
+    /* 折算坡度：把道岔/曲线阻力功折算为坡度降低 (4-4-1)  i'=i-(E_s+E_c)/Δl */
+    const iEff=s.grade - (switchWork(cond,j) + curveWork(cond,j))/s.len;
+    let dx=0;
+    while(dx < s.len - 1e-6){
+      const rbase=baseResistance(veh, cond.t, v);
+      const rwind=windResistance(veh.Q, veh.f, v, cond.vwind, cond.rho);
+      const r=rbase+rwind;
+      const a=gp*(iEff - r)*1e-3;          // 加速度 m/s²
+      // 教材 4-1-20 能量递推：v² = v₀² + 2·a·Δx（固定里程步长，非时间步长）
+      const v2=Math.sqrt(Math.max(0, v*v + 2*a*step));
+      dx+=step; x=Math.min(s.x1, x+step);
+      v=v2;
+      pts.push({x, v, h:heightAt(prof,x)});
+    }
+  }
+  return pts;
+}
+function maxSpeed(pts){ let m=0; for(const p of pts) if(p.v>m) m=p.v; return m; }
+function endSpeed(pts){ return pts[pts.length-1].v; }
+
+/* ---------- 能高分析（能高法 4-1-20）：总能高/阻力能高(四分量累计)/动能高 沿里程分布 ---------- */
+function energyAnalysis(prof, veh, cond, vpush){
+  const segs=segmentsOf(prof);
+  const gp=gPrime(veh.Q, veh.n);
+  const step=cond.step||1.0;
+  const hv0=vpush*vpush/(2*gp);           // 初始动能高
+  const Hp=prof[0].h;
+  const out=[];
+  let v=vpush, x=0;
+  let aBase=0, aWind=0, aSwitch=0, aCurve=0;
+  const rec=()=>{ const h=heightAt(prof,x), pot=Hp-h, total=hv0+pot, kin=v*v/(2*gp);
+    out.push({x, h, total, kin, base:aBase, wind:aWind, sw:aSwitch, curve:aCurve, res:aBase+aWind+aSwitch+aCurve}); };
+  rec();
+  for(let j=0;j<segs.length;j++){
+    const s=segs[j];
+    const Es=switchWork(cond,j), Ec=curveWork(cond,j);
+    const iEff=s.grade-(Es+Ec)/s.len;
+    let dx=0;
+    while(dx < s.len - 1e-6){
+      const rbase=baseResistance(veh,cond.t,v);
+      const rwind=windResistance(veh.Q,veh.f,v,cond.vwind,cond.rho);
+      const a=gp*(iEff-(rbase+rwind))*1e-3;
+      const v2=Math.sqrt(Math.max(0,v*v+2*a*step));
+      dx+=step; x=Math.min(s.x1,x+step);
+      aBase+=rbase*step/1000; aWind+=rwind*step/1000;
+      aSwitch+=(Es/s.len)*step/1000; aCurve+=(Ec/s.len)*step/1000;
+      v=v2;
+      rec();
+    }
+  }
+  return out;
+}
+
+/* ---------- 道岔/曲线参数（随规模，道岔位置固定） ---------- */
+function trackParams(lines){
+  let nSwitch, curveDeg;
+  if(lines<=16){ nSwitch=6; curveDeg=36; }
+  else if(lines<=24){ nSwitch=8; curveDeg=46; }
+  else if(lines<=32){ nSwitch=10; curveDeg=56; }
+  else { nSwitch=12; curveDeg=66; }
+  return {nSwitch, curveDeg};
+}
+
+/* ---------- 优化目标定义 ---------- */
+const OBJDEF = {
+  cost:      { name:'工程总成本最低',        dir:'min', unit:'万元',   tag:'min', desc:'土石方 + 减速器 + 减速顶，总投资估算' },
+  capacity:  { name:'解体能力最大',          dir:'max', unit:'m/s',    tag:'max', desc:'最大允许推峰速度（受夏季限速与间隔控制）' },
+  coupling:  { name:'安全连挂率最高',        dir:'max', unit:'%',      tag:'max', desc:'以 ≤1.4 m/s 安全连挂的车辆占比' },
+  winter:    { name:'冬季溜放可靠性最高',    dir:'max', unit:'倍',     tag:'max', desc:'难行车冬季末速 / 1.4 的安全裕量' },
+  equipment: { name:'减速器/减速顶数量最少', dir:'min', unit:'台',     tag:'min', desc:'减速器节数 + 减速顶数量' },
+};
+
+/* 目标分组与互斥关系：经济性目标（成本、设备）与性能目标（能力、连挂率、可靠性）两两矛盾，不能同时选择 */
+const OBJ_GROUP = { cost:'经济性', equipment:'经济性', capacity:'性能', coupling:'性能', winter:'性能' };
+const CONFLICTS = {
+  cost:      ['capacity','coupling','winter'],
+  equipment: ['capacity','coupling','winter'],
+  capacity:  ['cost','equipment'],
+  coupling:  ['cost','equipment'],
+  winter:    ['cost','equipment'],
+};
+
+/* ---------- 编码/解码（优化变量 → 纵断面） ---------- */
+/* 变量 p = [H, x1..x_{N-1}(L的占比), h1..h_{N-1}(H的占比)]，维度 2N-1 */
+function makeCfg(){
+  readVehicles();
+  const lines = parseInt($('in-lines').value);
+  const N = parseInt($('in-segments').value);   // 坡段数
+  const Hmin = parseFloat($('in-hmin').value), Hmax = parseFloat($('in-hmax').value);
+  const L = parseFloat($('in-length').value);
+  const tp = trackParams(lines);
+  const region = $('in-region').value;
+  const tWinter = parseFloat($('in-twinter').value);
+  const vWind = parseFloat($('in-vwind').value);
+  const rhoW = airDensity(tWinter);
+  const rhoS = airDensity(27);
+
+  const nb = N-1;                 // 内部变坡点数
+  const dim = 1 + nb + nb;        // H + x + h
+  const lb=[Hmin], ub=[Hmax];
+  for(let i=0;i<nb;i++){ lb.push(0.04); ub.push(0.96); }   // x 占比
+  for(let i=0;i<nb;i++){ lb.push(0.02); ub.push(0.98); }   // h 占比
+
+  // 道岔/曲线阻力参数（可编辑）：逆向道岔数与曲线转角随规模自动推算，其余默认 0
+  const coef={
+    rev:   parseFloat($('in-crev').value)   || 24,
+    fwd:   parseFloat($('in-cfwd').value)   || 12,
+    dia:   parseFloat($('in-cdia').value)   || 12,
+    slip:  parseFloat($('in-cslip').value)  || 48,
+    curve: parseFloat($('in-ccurve').value) || 8,
+  };
+  const nRev=tp.nSwitch, nFwd=parseInt($('in-nfwd').value)||0, nDia=parseInt($('in-ndia').value)||0, nSlip=parseInt($('in-nslip').value)||0;
+  const thetaCurve=tp.curveDeg;
+
+  // 道岔/曲线分配到各坡段（道岔集中在道岔区坡 = 倒数第二段，道岔位置固定不优化）
+  const switchSeg = Math.max(1, N-2);
+  const nRevArr=new Array(N).fill(0), nFwdArr=new Array(N).fill(0), nDiaArr=new Array(N).fill(0), nSlipArr=new Array(N).fill(0);
+  const thetaArr=new Array(N).fill(0), thetaSArr=new Array(N).fill(0);
+  nRevArr[switchSeg]=nRev; nFwdArr[switchSeg]=nFwd; nDiaArr[switchSeg]=nDia; nSlipArr[switchSeg]=nSlip;
+  thetaArr[switchSeg]=thetaCurve;
+
+  const objIdx = [...document.querySelectorAll('#obj-grid .obj-card.on')].map(el=>el.dataset.key);
+  const wWinter = { t:tWinter, vwind:vWind, rho:rhoW, coef, nRev:nRevArr, nFwd:nFwdArr, nDia:nDiaArr, nSlip:nSlipArr, theta:thetaArr, thetaS:thetaSArr, step:2.0 };
+  const wSummer = { t:27, vwind:0, rho:rhoS, coef, nRev:nRevArr, nFwd:nFwdArr, nDia:nDiaArr, nSlip:nSlipArr, theta:thetaArr, thetaS:thetaSArr, step:2.0 };
+
+  return {
+    N, dim, L, Hmin, Hmax, lb, ub,
+    objIdx, penalty:1000, maxArchive:120,
+    nRev, nFwd, nDia, nSlip, thetaCurve, coef,
+    wWinter, wSummer, region, tWinter, vWind,
+    popSize: parseInt($('in-pop').value), iters: parseInt($('in-iter').value),
+    xRetarderI:0.35, xRetarderII:0.70, xRetarderIII:0.90, xSwitch:0.62, xTopStart:1.0,
+  };
+}
+function decode(p, cfg){
+  const H=p[0], N=cfg.N, nb=N-1, L=cfg.L;
+  const xs=p.slice(1,1+nb).slice().sort((a,b)=>a-b);
+  const hs=p.slice(1+nb,1+2*nb).slice().sort((a,b)=>b-a);
+  const prof=[{x:0,h:H}];
+  for(let k=0;k<nb;k++) prof.push({x:xs[k]*L, h:hs[k]*H});
+  prof.push({x:L,h:0});
+  return prof;
+}
+
+/* ---------- 评价函数：目标 + 约束（罚函数） ---------- */
+function evaluate(p, cfg){
+  const prof=decode(p,cfg);
+  const segs=segmentsOf(prof);
+  const N=cfg.N;
+  const violations=[];
+  const grades=segs.map(s=>s.grade);
+
+  // 坡度边界约束（教材 4-2 节）
+  // 加速坡 (段0)
+  if(grades[0]>55) violations.push({n:'加速坡坡度超限', a:grades[0]-55});
+  if(grades[0]<35) violations.push({n:'加速坡坡度过缓(需≥35‰)', a:35-grades[0]});
+  // 中间坡 (段1..N-3)
+  for(let j=1;j<=N-3;j++){ if(grades[j]<8) violations.push({n:'中间坡坡度过缓(需≥8‰)', a:8-grades[j]}); if(grades[j]>55) violations.push({n:'中间坡坡度过陡', a:grades[j]-55}); }
+  // 道岔区坡 (段N-2)
+  const jSwitch=Math.max(1,N-2);
+  if(grades[jSwitch]>2.5) violations.push({n:'道岔区坡过陡(需≤2.5‰)', a:grades[jSwitch]-2.5});
+  // 打靶区 (段N-1)：坡度应在 0.6~1.0‰（过陡易超速连挂，过缓难溜到位），两侧都罚以逼入目标区间
+  if(grades[N-1]>1.0) violations.push({n:'打靶区坡度过陡(0.6~1.0‰)', a:grades[N-1]-1.0});
+  if(grades[N-1]<0.6) violations.push({n:'打靶区坡度过缓(0.6~1.0‰)', a:0.6-grades[N-1]});
+  // 前陡后缓（凹形）
+  for(let j=0;j<N-1;j++){ if(grades[j]<grades[j+1]-0.5) violations.push({n:'纵断面非前陡后缓(凹形)', a:(grades[j+1]-grades[j]-0.5)}); }
+
+  // 两工况仿真
+  const simHardWinter = simulate(prof, VEHICLES.hard, cfg.wWinter, 1.4);
+  const simEasySummer = simulate(prof, VEHICLES.easy, cfg.wSummer, 1.9);
+
+  // 约束1：冬季难行车溜到位（末速 ≥ 1.4 m/s）
+  const vEndHard = endSpeed(simHardWinter);
+  if(vEndHard < 1.4) violations.push({n:'冬季难行车溜不到位', a:1.4-vEndHard});
+  // 约束2：夏季易行车不超速（最大速度 ≤ 7.0 m/s，减速器入口限制）
+  const vMaxEasy = maxSpeed(simEasySummer);
+  if(vMaxEasy > 7.0) violations.push({n:'夏季易行车超速(>7 m/s)', a:vMaxEasy-7.0});
+
+  const pen = violations.reduce((s,x)=>s+x.a,0);
+
+  // ---- 目标计算 ----
+  // ① 成本
+  const vIn = speedAt(simEasySummer, cfg.xRetarderI*cfg.L);
+  const gpEasy = gPrime(VEHICLES.easy.Q, VEHICLES.easy.n);
+  const Hbrake = Math.max(0, (vIn*vIn - 1.4*1.4)/(2*gpEasy));
+  const alpha=0.18, mu=0.13, lSec=1.2, lSup=0.5;
+  const nSec = Math.max(0, Math.ceil((Hbrake*(1+alpha)/mu + lSup)/lSec));
+  const iTop=2.5, rEasy=1.0, K=VEHICLES.easy.Q/(VEHICLES.easy.n*0.1);  // 连挂区坡度 2.5‰（教材 4-3-26 例）
+  const D = Math.max(0, Math.ceil((1+0.06)*K*(iTop-rEasy)*300*1e-3));
+  const costEarth = 90*prof[0].h;          // 土石方(万元)，随峰高
+  const costRet = 8*nSec;                  // 减速器(万元)
+  const costTop = 0.05*D;                  // 减速顶(万元)
+  const cost = costEarth + costRet + costTop;
+
+  // ② 解体能力 = 最大允许推峰速度（min(间隔上限, 限速上限)）
+  const vCap = maxPushSpeed(prof, cfg);
+
+  // ③ 安全连挂率（确定性代理：易行车经制动后到连挂点速度 vs 1.4）
+  const vCouple = Math.max(0, vIn - Math.sqrt(2*gpEasy*Hbrake)); // 简化
+  const coupling = clamp(1 - Math.max(0, vCouple-1.4)/1.4, 0, 1)*100;
+
+  // ④ 冬季可靠性 = v末/1.4
+  const winterRel = vEndHard/1.4;
+
+  // ⑤ 设备数量
+  const equip = nSec + D;
+
+  const meta={prof,segs,grades,simHardWinter,simEasySummer,vEndHard,vMaxEasy,vIn,nSec,D,cost,costEarth,costRet,costTop,coupling,winterRel,equip,vCap,pen, capacity:vCap, winter:winterRel, equipment:equip};
+  const all={cost, capacity:vCap, coupling, winter:winterRel, equipment:equip};
+  const dirs=cfg.objIdx.map(o=>OBJDEF[o].dir);
+  const obj=cfg.objIdx.map(o=>{
+    const raw=all[o];
+    const pnl = dirs[cfg.objIdx.indexOf(o)]==='min' ? +cfg.penalty*pen : -cfg.penalty*pen;
+    return raw + pnl;
+  });
+
+  return {obj, violations, prof, segs, grades, meta, penalty:pen};
+}
+
+/* 最大推峰速度：二分求「夏季不超速」与「间隔」两个上限的最小值 */
+function maxPushSpeed(prof,cfg){
+  function speedOK(vp){ const s=simulate(prof,VEHICLES.easy,cfg.wSummer,vp); return maxSpeed(s)<=7.0; }
+  function switchOK(vp){ const s=simulate(prof,VEHICLES.hard,cfg.wWinter,vp); const vs=speedAt(s,cfg.xSwitch*cfg.L); return vs>=2.28*vp; }
+  function bsearch(fn){ let lo=0.8, hi=2.8; if(fn(hi)) return hi; for(let k=0;k<9;k++){ const m=(lo+hi)/2; if(fn(m)) lo=m; else hi=m; } return lo; }
+  const vSpeed=bsearch(speedOK);
+  const vSwitch=bsearch(switchOK);
+  return Math.min(vSpeed,vSwitch);
+}
+
+/* ---------- 多目标支配关系 ---------- */
+function dominates(a,b,dirs){ // a 支配 b?
+  let better=false;
+  for(let i=0;i<a.length;i++){
+    if(dirs[i]==='min'){ if(a[i]>b[i]) return false; if(a[i]<b[i]) better=true; }
+    else { if(a[i]<b[i]) return false; if(a[i]>b[i]) better=true; }
+  }
+  return better;
+}
+function crowdingDistance(set,dirs){
+  const m=set.length;
+  if(m<=1){ set.forEach(s=>s.cd=0); return; }
+  const n=set[0].obj.length;
+  const dist=new Array(m).fill(0);
+  for(let o=0;o<n;o++){
+    const idx=set.map((_,i)=>i).sort((a,b)=>set[a].obj[o]-set[b].obj[o]);
+    const rng=(set[idx[m-1]].obj[o]-set[idx[0]].obj[o])||1;
+    for(let k=0;k<m;k++){
+      if(m===2){ dist[idx[k]]+=1; continue; }
+      if(k===0) dist[idx[k]]+=2*(set[idx[1]].obj[o]-set[idx[0]].obj[o])/rng;
+      else if(k===m-1) dist[idx[k]]+=2*(set[idx[m-1]].obj[o]-set[idx[m-2]].obj[o])/rng;
+      else dist[idx[k]]+=(set[idx[k+1]].obj[o]-set[idx[k-1]].obj[o])/rng;
+    }
+  }
+  set.forEach((s,i)=>{ s.cd=dist[i]; });
+}
+
+/* ---------- MOPSO 主流程 ---------- */
+let STOP=false;
+async function moPSO(cfg, onIter){
+  STOP=false;
+  const dim=cfg.dim, lb=cfg.lb, ub=cfg.ub;
+  const dirs=cfg.objIdx.map(o=>OBJDEF[o].dir);
+  const pop=[];
+  for(let i=0;i<cfg.popSize;i++){
+    const x=lb.map((l,j)=>l+Math.random()*(ub[j]-l));
+    pop.push({x, v:Array(dim).fill(0)});
+  }
+  let archive=[];
+  const evalParticle=p=>{
+    const r=evaluate(p.x,cfg); p.obj=r.obj.slice(); p.prof=r.prof; p.segs=r.segs; p.grades=r.grades; p.meta=r.meta; p.viol=r.violations; p.pen=r.penalty;
+    if(!p.pbestObj || dominates(p.obj,p.pbestObj,dirs)){ p.pbest=p.x.slice(); p.pbestObj=p.obj.slice(); }
+  };
+  pop.forEach(evalParticle);
+  archive=updateArchive(archive,pop,dirs,cfg);
+  const w0=0.9,w1=0.4,c1=1.5,c2=1.5;
+  for(let it=0; it<cfg.iters && !STOP; it++){
+    const w=w0-(w0-w1)*it/cfg.iters;
+    for(const p of pop){
+      const leader=selectLeader(archive);
+      const g=leader?leader.x:p.pbest;
+      for(let j=0;j<dim;j++){
+        const r1=Math.random(), r2=Math.random();
+        p.v[j]=w*p.v[j]+c1*r1*(p.pbest[j]-p.x[j])+c2*r2*(g[j]-p.x[j]);
+        const vmax=(ub[j]-lb[j])*0.2; p.v[j]=clamp(p.v[j],-vmax,vmax);
+        p.x[j]=p.x[j]+p.v[j];
+        if(p.x[j]<lb[j]){p.x[j]=lb[j]; p.v[j]*=-0.5;}
+        if(p.x[j]>ub[j]){p.x[j]=ub[j]; p.v[j]*=-0.5;}
+      }
+    }
+    pop.forEach(evalParticle);
+    archive=updateArchive(archive,pop,dirs,cfg);
+    if(onIter) onIter(it, archive);
+    await new Promise(r=>setTimeout(r,0)); // 让出主线程：进度条刷新、停止按钮生效
+  }
+  return archive;
+}
+function updateArchive(archive,candidates,dirs,cfg){
+  let set=archive.concat(candidates.map(p=>({x:p.x,obj:p.obj,prof:p.prof,segs:p.segs,grades:p.grades,meta:p.meta,viol:p.viol,pen:p.pen})));
+  const nd=[];
+  for(const s of set){ let dom=false; for(const o of set){ if(o!==s && dominates(o.obj,s.obj,dirs)){dom=true;break;} } if(!dom) nd.push(s); }
+  const seen=new Set(),out=[];
+  for(const s of nd){ const k=s.x.map(v=>v.toFixed(3)).join(','); if(!seen.has(k)){seen.add(k);out.push(s);} }
+  if(out.length>cfg.maxArchive){ crowdingDistance(out,dirs); out.sort((a,b)=>b.cd-a.cd); out.length=cfg.maxArchive; }
+  return out;
+}
+function selectLeader(archive){
+  if(!archive.length) return null;
+  if(archive[0].cd==null) crowdingDistance(archive, archive.map(()=>'min')); // fallback
+  const total=archive.reduce((s,a)=>s+(a.cd||1),0);
+  if(total<=0) return archive[(Math.random()*archive.length)|0];
+  let r=Math.random()*total;
+  for(const s of archive){ r-=(s.cd||1); if(r<=0) return s; }
+  return archive[archive.length-1];
+}
+
+/* ---------- NSGA-II 多目标遗传算法 ---------- */
+function fastNonDominatedSort(pop, dirs){
+  const n=pop.length;
+  const domCount=new Array(n).fill(0);
+  const domSet=Array.from({length:n},()=>[]);
+  const fronts=[];
+  for(let i=0;i<n;i++){
+    for(let j=i+1;j<n;j++){
+      if(dominates(pop[i].obj,pop[j].obj,dirs)){ domSet[i].push(j); domCount[j]++; }
+      else if(dominates(pop[j].obj,pop[i].obj,dirs)){ domSet[j].push(i); domCount[i]++; }
+    }
+  }
+  const cur=[];
+  for(let i=0;i<n;i++){ if(domCount[i]===0){ pop[i].rank=0; cur.push(i); } }
+  fronts.push(cur);
+  let k=0;
+  while(fronts[k] && fronts[k].length){
+    const next=[];
+    for(const i of fronts[k]){ for(const j of domSet[i]){ domCount[j]--; if(domCount[j]===0){ pop[j].rank=k+1; next.push(j); } } }
+    k++;
+    if(next.length) fronts.push(next); else break;
+  }
+  return fronts.map(F=>F.map(i=>pop[i]));
+}
+function tournament(pop){
+  const a=pop[(Math.random()*pop.length)|0], b=pop[(Math.random()*pop.length)|0];
+  return (a.rank<b.rank || (a.rank===b.rank && (a.cd||0)>(b.cd||0))) ? a : b;
+}
+async function nsga2(cfg, onIter){
+  STOP=false;
+  const dim=cfg.dim, lb=cfg.lb, ub=cfg.ub;
+  const dirs=cfg.objIdx.map(o=>OBJDEF[o].dir);
+  const evalInd=ind=>{ const r=evaluate(ind.x,cfg); ind.obj=r.obj.slice(); ind.prof=r.prof; ind.segs=r.segs; ind.grades=r.grades; ind.meta=r.meta; ind.viol=r.violations; ind.pen=r.penalty; };
+  let pop=[];
+  for(let i=0;i<cfg.popSize;i++){ const ind={x:lb.map((l,j)=>l+Math.random()*(ub[j]-l))}; evalInd(ind); pop.push(ind); }
+  let archive=updateArchive([], pop, dirs, cfg);
+  const pc=0.9, etaC=20, etaM=20, pm=1/dim;
+  for(let gen=0; gen<cfg.iters && !STOP; gen++){
+    const fronts=fastNonDominatedSort(pop, dirs);
+    fronts.forEach(F=>crowdingDistance(F,dirs));
+    const off=[];
+    while(off.length<cfg.popSize){
+      const p1=tournament(pop), p2=tournament(pop);
+      const c1=p1.x.slice(), c2=p2.x.slice();
+      if(Math.random()<pc){
+        for(let j=0;j<dim;j++){
+          if(Math.random()<0.5){
+            const u=Math.random();
+            const bq= u<=0.5 ? Math.pow(2*u,1/(etaC+1)) : Math.pow(1/(2*(1-u)),1/(etaC+1));
+            const a=c1[j], b=c2[j]; // 先保存父代值，避免 c2 用到已被覆盖的 c1
+            c1[j]=clamp(0.5*((1+bq)*a+(1-bq)*b), lb[j], ub[j]);
+            c2[j]=clamp(0.5*((1-bq)*a+(1+bq)*b), lb[j], ub[j]);
+          }
+        }
+      }
+      [c1,c2].forEach(c=>{
+        for(let j=0;j<dim;j++){
+          if(Math.random()<pm){
+            const u=Math.random();
+            const d= u<0.5 ? Math.pow(2*u,1/(etaM+1))-1 : 1-Math.pow(2*(1-u),1/(etaM+1));
+            c[j]=clamp(c[j]+d*(ub[j]-lb[j]), lb[j], ub[j]);
+          }
+        }
+      });
+      const o1={x:c1}; evalInd(o1); off.push(o1);
+      if(off.length<cfg.popSize){ const o2={x:c2}; evalInd(o2); off.push(o2); }
+    }
+    const combined=pop.concat(off);
+    const allFronts=fastNonDominatedSort(combined, dirs);
+    const newPop=[]; let fi=0;
+    while(fi<allFronts.length && newPop.length+allFronts[fi].length<=cfg.popSize){
+      crowdingDistance(allFronts[fi],dirs); newPop.push(...allFronts[fi]); fi++;
+    }
+    if(newPop.length<cfg.popSize && fi<allFronts.length){
+      crowdingDistance(allFronts[fi],dirs);
+      allFronts[fi].sort((a,b)=>(b.cd||0)-(a.cd||0));
+      newPop.push(...allFronts[fi].slice(0,cfg.popSize-newPop.length));
+    }
+    pop=newPop;
+    archive=updateArchive(archive, pop, dirs, cfg);
+    if(onIter) onIter(gen, archive);
+    await new Promise(r=>setTimeout(r,0));
+  }
+  return archive;
+}
+
+/* ---------- ALNS 自适应大邻域搜索（多目标） ---------- */
+async function alns(cfg, onIter){
+  STOP=false;
+  const dim=cfg.dim, lb=cfg.lb, ub=cfg.ub;
+  const dirs=cfg.objIdx.map(o=>OBJDEF[o].dir);
+  const evalS=s=>{ const r=evaluate(s.x,cfg); s.obj=r.obj.slice(); s.prof=r.prof; s.segs=r.segs; s.grades=r.grades; s.meta=r.meta; s.viol=r.violations; s.pen=r.penalty; };
+  let pool=[];
+  for(let i=0;i<cfg.popSize;i++){ const s={x:lb.map((l,j)=>l+Math.random()*(ub[j]-l))}; evalS(s); pool.push(s); }
+  let archive=updateArchive([], pool, dirs, cfg);
+  const w=[1,1,1]; // 单点/三点/大范围 破坏算子权重
+  for(let it=0; it<cfg.iters && !STOP; it++){
+    const src=(archive.length && Math.random()<0.7)?archive:pool;
+    const cur=src[(Math.random()*src.length)|0];
+    const x=cur.x.slice();
+    let di=0, rs=Math.random()*w.reduce((a,b)=>a+b,0);
+    for(let i=0;i<w.length;i++){ rs-=w[i]; if(rs<=0){ di=i; break; } }
+    const nDim = di===0?1 : di===1?3 : Math.max(2,Math.floor(dim*0.5));
+    const idx=new Set();
+    while(idx.size<nDim) idx.add((Math.random()*dim)|0);
+    for(const j of idx) x[j]=lb[j]+Math.random()*(ub[j]-lb[j]);
+    if(archive.length && Math.random()<0.35){
+      const elite=archive[(Math.random()*archive.length)|0];
+      for(const j of idx) x[j]=0.5*(x[j]+elite.x[j]);
+    }
+    for(let j=0;j<dim;j++) x[j]=clamp(x[j],lb[j],ub[j]);
+    const cand={x}; evalS(cand);
+    if(!dominates(cur.obj, cand.obj, dirs)) w[di]=Math.min(5, w[di]*1.2); else w[di]=Math.max(0.1, w[di]*0.85);
+    pool[(Math.random()*pool.length)|0]=cand;
+    archive=updateArchive(archive,[cand],dirs,cfg);
+    if(onIter) onIter(it, archive);
+    await new Promise(r=>setTimeout(r,0));
+  }
+  return archive;
+}
+
+/* ---------- 初始方案（规范模板，用于「一键生成」） ---------- */
+function defaultProfile(cfg){
+  const N=cfg.N, L=cfg.L;
+  const cold=(cfg.region==='东北'||cfg.region==='西北');
+  let fracs, grades;
+  if(N===3){ fracs=[0.18,0.60,0.22]; grades=[42,2.5,0.8]; }
+  else if(N===4){ fracs=[0.12,0.24,0.42,0.22]; grades=cold?[45,16,2.0,0.8]:[42,15,2.0,0.8]; }
+  else if(N===5){ fracs=[0.10,0.18,0.18,0.36,0.18]; grades=cold?[45,20,12,2.0,0.8]:[42,18,10,2.0,0.8]; }
+  else { fracs=[0.08,0.14,0.14,0.14,0.32,0.18]; grades=cold?[45,22,17,12,2.0,0.8]:[42,20,15,10,2.0,0.8]; }
+  // 峰高 = 各坡段坡度×长度之和（保证末点高程=0，纵断面自洽）
+  let H = fracs.reduce((s,f,j)=>s+grades[j]*f*L/1000, 0);
+  // 按用户设定的峰高上/下限等比缩放坡度，使默认方案落在允许峰高区间内
+  if(cfg.Hmax!=null && H>cfg.Hmax){ const k=cfg.Hmax/H; grades=grades.map(g=>g*k); H=cfg.Hmax; }
+  else if(cfg.Hmin!=null && H<cfg.Hmin){ const k=cfg.Hmin/H; grades=grades.map(g=>g*k); H=cfg.Hmin; }
+  const prof=[{x:0,h:H}];
+  let x=0, h=H;
+  for(let j=0;j<N;j++){ x+=fracs[j]*L; h-=grades[j]*fracs[j]*L/1000; prof.push({x:Math.min(x,L), h}); }
+  prof[prof.length-1]={x:L,h:0};
+  return prof;
+}
+
+/* =====================================================================
+ *  SVG 图表渲染（自绘，无外部依赖）
+ * ===================================================================== */
+const SVGNS='http://www.w3.org/2000/svg';
+function makeChart(containerId,{ml=46,mr=16,mt=16,mb=34}={}){
+  const c=$(containerId); c.innerHTML='';
+  const svg=document.createElementNS(SVGNS,'svg');
+  c.appendChild(svg);
+  let W=0,H=0;
+  function size(){ const r=c.getBoundingClientRect(); W=Math.max(320,r.width); H=Math.max(240, Math.round(W*0.52)); svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.setAttribute('width',W); svg.setAttribute('height',H); }
+  size();
+  const api={
+    get W(){return W}, get H(){return H},
+    resize:size,
+    x:function(v,xmin,xmax){ return ml+(v-xmin)/(xmax-xmin)*(W-ml-mr); },
+    y:function(v,ymin,ymax){ return H-mb-(v-ymin)/(ymax-ymin)*(H-mt-mb); },
+    grid(xmin,xmax,ymin,ymax,nx=6,ny=5){
+      let g=document.createElementNS(SVGNS,'g');
+      for(let i=0;i<=nx;i++){ const v=xmin+(xmax-xmin)*i/nx, px=this.x(v,xmin,xmax); const l=document.createElementNS(SVGNS,'line'); l.setAttribute('x1',px);l.setAttribute('x2',px);l.setAttribute('y1',mt);l.setAttribute('y2',H-mb);l.setAttribute('stroke','#f1f5f9'); g.appendChild(l); }
+      for(let i=0;i<=ny;i++){ const v=ymin+(ymax-ymin)*i/ny, py=this.y(v,ymin,ymax); const l=document.createElementNS(SVGNS,'line'); l.setAttribute('x1',ml);l.setAttribute('x2',W-mr);l.setAttribute('y1',py);l.setAttribute('y2',py);l.setAttribute('stroke','#f1f5f9'); g.appendChild(l); }
+      svg.appendChild(g);
+      return g;
+    },
+    axes(xmin,xmax,ymin,ymax,xfmt,yfmt){
+      const g=document.createElementNS(SVGNS,'g'); g.setAttribute('font-size','11'); g.setAttribute('fill','#9ca3af'); g.setAttribute('font-family',getComputedStyle(document.body).fontFamily);
+      for(let i=0;i<=6;i++){ const v=xmin+(xmax-xmin)*i/6, px=this.x(v,xmin,xmax); const t=document.createElementNS(SVGNS,'text'); t.setAttribute('x',px);t.setAttribute('y',H-mb+16);t.setAttribute('text-anchor','middle');t.textContent=(xfmt?xfmt(v):fmt(v,0)); g.appendChild(t); }
+      for(let i=0;i<=5;i++){ const v=ymin+(ymax-ymin)*i/5, py=this.y(v,ymin,ymax); const t=document.createElementNS(SVGNS,'text'); t.setAttribute('x',ml-7);t.setAttribute('y',py+4);t.setAttribute('text-anchor','end');t.textContent=(yfmt?yfmt(v):fmt(v,1)); g.appendChild(t); }
+      svg.appendChild(g);
+      return g;
+    },
+    line(pts,xmin,xmax,ymin,ymax,color,width=2,dash){
+      const p=document.createElementNS(SVGNS,'polyline');
+      const ptsStr=pts.map(d=>`${this.x(d[0],xmin,xmax)},${this.y(d[1],ymin,ymax)}`).join(' ');
+      p.setAttribute('points',ptsStr); p.setAttribute('fill','none'); p.setAttribute('stroke',color); p.setAttribute('stroke-width',width); if(dash) p.setAttribute('stroke-dasharray',dash);
+      svg.appendChild(p); return p;
+    },
+    scatter(pts,xmin,xmax,ymin,ymax,color,radius=4,onClick){
+      const g=document.createElementNS(SVGNS,'g');
+      pts.forEach((d,i)=>{ const c=document.createElementNS(SVGNS,'circle'); c.setAttribute('cx',this.x(d[0],xmin,xmax)); c.setAttribute('cy',this.y(d[1],ymin,ymax)); c.setAttribute('r',radius); c.setAttribute('fill',color); c.setAttribute('stroke','#fff'); c.setAttribute('stroke-width','1.2'); if(onClick){c.style.cursor='pointer'; c.addEventListener('click',()=>onClick(d,i));} g.appendChild(c); });
+      svg.appendChild(g); return g;
+    },
+    text(x,y,str,{color='#1f2937',size=11,anchor='middle',weight='normal'}={}){
+      const t=document.createElementNS(SVGNS,'text'); t.setAttribute('x',x);t.setAttribute('y',y);t.setAttribute('text-anchor',anchor);t.setAttribute('fill',color);t.setAttribute('font-size',size);t.setAttribute('font-weight',weight);t.textContent=str; svg.appendChild(t); return t;
+    },
+    rect(x,y,w,h,color){ const r=document.createElementNS(SVGNS,'rect'); r.setAttribute('x',x);r.setAttribute('y',y);r.setAttribute('width',w);r.setAttribute('height',h);r.setAttribute('fill',color); svg.appendChild(r); return r; },
+    clear(){ while(svg.firstChild) svg.removeChild(svg.firstChild); }
+  };
+  window.addEventListener('resize',()=>{ size(); });
+  return api;
+}
+
+/* =====================================================================
+ *  全局状态与渲染
+ * ===================================================================== */
+const state={ cfg:null, archive:[], selected:null, iterHistory:[], running:false };
+
+function renderPareto(){
+  const cfg=state.cfg;
+  const box=$('chart-pareto'); const c=makeChart('chart-pareto');
+  const lg=$('legend-pareto'); lg.innerHTML='';
+  if(!state.archive.length){ c.text(c.W/2,c.H/2,'尚无 Pareto 解，请先运行优化',{color:'#9ca3af'}); return; }
+  const objIdx=cfg.objIdx;
+  const o1=objIdx[0], o2=objIdx.length>1?objIdx[1]:objIdx[0];
+  const dirs=[OBJDEF[o1].dir, OBJDEF[o2].dir];
+  const raw=state.archive.map(s=>({...s, r1:s.meta[o1], r2:s.meta[o2]}));
+  let xmin=Math.min(...raw.map(d=>d.r1)), xmax=Math.max(...raw.map(d=>d.r1));
+  let ymin=Math.min(...raw.map(d=>d.r2)), ymax=Math.max(...raw.map(d=>d.r2));
+  const padX=(xmax-xmin)*0.08||1, padY=(ymax-ymin)*0.1||1;
+  xmin-=padX;xmax+=padX;ymin-=padY;ymax+=padY;
+  c.grid(xmin,xmax,ymin,ymax);
+  c.axes(xmin,xmax,ymin,ymax, v=>fmt(v,0), v=>fmt(v,1));
+  c.scatter(raw.map(d=>[d.r1,d.r2]),xmin,xmax,ymin,ymax,'#2563eb',5,(d,i)=>{ state.selected=raw[i]; selectParetoRow(i); syncSelected(); });
+  // 高亮选中
+  if(state.selected && state.selected.meta){
+    const s=state.selected; c.scatter([[s.meta[o1],s.meta[o2]]],xmin,xmax,ymin,ymax,'#dc2626',7);
+  }
+  c.text(c.W/2, 13, `${OBJDEF[o1].name} →`, {color:'#6b7280',size:11.5});
+  const lbl2=`${OBJDEF[o2].name}`;
+  c.text(ml(c), 10, lbl2, {color:'#6b7280',size:11.5,anchor:'start'});
+  lg.innerHTML=`<span class="li"><span class="sw" style="background:#2563eb"></span>Pareto 非支配解</span><span class="li"><span class="sw" style="background:#dc2626"></span>当前选中方案</span>`;
+  function ml(cc){ return 46; }
+}
+
+function renderConvergence(){
+  const c=makeChart('chart-conv');
+  const hist=state.iterHistory;
+  if(!hist.length){ c.text(c.W/2,c.H/2,'等待优化',{color:'#9ca3af'}); return; }
+  const xmax=Math.max(1,hist.length-1), ymax=Math.max(5,...hist);
+  c.grid(0,xmax,0,ymax);
+  c.axes(0,xmax,0,ymax, v=>fmt(v,0), v=>fmt(v,0));
+  c.line(hist.map((v,i)=>[i,v]),0,xmax,0,ymax,'#2563eb',2);
+  c.text(c.W/2,13,'迭代次数',{color:'#6b7280',size:11});
+  c.text(12,c.H/2,'Pareto 解数量',{color:'#6b7280',size:11,anchor:'middle'});
+}
+
+function renderProfileChart(prof,cfg){
+  const c=makeChart('chart-profile');
+  const L=cfg.L, H=prof[0].h;
+  const xmax=L*1.04, xmin=-L*0.04;
+  const ymax=H*1.25, ymin=-H*0.12;
+  c.grid(xmin,xmax,ymin,ymax);
+  c.axes(xmin,xmax,ymin,ymax, v=>fmt(v,0), v=>fmt(v,1));
+  // 纵断面线
+  c.line(prof.map(p=>[p.x,p.h]),xmin,xmax,ymin,ymax,'#1d4ed8',2.5);
+  // 地面/计算点参考
+  c.line([[0,0],[L,0]],xmin,xmax,ymin,ymax,'#9ca3af',1,'4 3');
+  // 峰高标注
+  c.line([[0,0],[0,H]],xmin,xmax,ymin,ymax,'#dc2626',1.2,'4 3');
+  c.text(c.x(0,xmin,xmax)-8, c.y(H/2,ymin,ymax), `峰高 H=${fmt(H,2)}m`, {color:'#dc2626',size:11,anchor:'end'});
+  // 变坡点 + 坡度标注
+  const segs=segmentsOf(prof);
+  prof.forEach(p=>{ c.scatter([[p.x,p.h]],xmin,xmax,ymin,ymax,'#dc2626',3.5); });
+  segs.forEach((s,i)=>{ const mx=(s.x0+s.x1)/2, mh=(s.h0+s.h1)/2; c.text(c.x(mx,xmin,xmax), c.y(mh,ymin,ymax)-6, `${fmt(s.grade,1)}‰`, {color:'#1d4ed8',size:10}); });
+  c.text(c.W/2,13,'纵断面（高程—里程，前陡后缓凹形）',{color:'#6b7280',size:11});
+}
+
+function renderSpeedChart(meta,cfg){
+  const c=makeChart('chart-speed');
+  const hw=meta.simHardWinter, es=meta.simEasySummer;
+  const L=cfg.L;
+  const xmax=L*1.04, xmin=-L*0.04;
+  const ymax=Math.max(8, Math.max(maxSpeed(hw),maxSpeed(es))*1.15);
+  c.grid(xmin,xmax,0,ymax);
+  c.axes(xmin,xmax,0,ymax, v=>fmt(v,0), v=>fmt(v,1));
+  c.line(hw.map(p=>[p.x,p.v]),xmin,xmax,0,ymax,'#2563eb',2);
+  c.line(es.map(p=>[p.x,p.v]),xmin,xmax,0,ymax,'#dc2626',2);
+  c.line([[0,7],[L,7]],xmin,xmax,0,ymax,'#f59e0b',1.2,'5 3');
+  c.text(c.x(L*0.98,xmin,xmax), c.y(7,0,ymax)-5, '减速器限速 7 m/s',{color:'#f59e0b',size:10,anchor:'end'});
+  c.line([[0,1.4],[L,1.4]],xmin,xmax,0,ymax,'#16a34a',1.2,'5 3');
+  c.text(c.x(L*0.98,xmin,xmax), c.y(1.4,0,ymax)-5, '安全连挂 1.4 m/s',{color:'#16a34a',size:10,anchor:'end'});
+  c.text(c.W/2,13,'溜放速度曲线',{color:'#6b7280',size:11});
+  $('legend-speed').innerHTML=`<span class="li"><span class="sw" style="background:#2563eb"></span>难行车·冬季 (v推=1.4)</span><span class="li"><span class="sw" style="background:#dc2626"></span>易行车·夏季 (v推=1.9)</span><span class="li"><span class="sw" style="background:#f59e0b"></span>减速器限速</span><span class="li"><span class="sw" style="background:#16a34a"></span>安全连挂速度</span>`;
+}
+
+function renderCheckList(meta,cfg){
+  const g=meta.grades, N=cfg.N;
+  const items=[];
+  items.push({nm:'加速坡坡度 ≤55‰（内燃牵引）', ok:g[0]<=55 && g[0]>=3, vl:`当前 ${fmt(g[0],1)}‰（规范 ≤55‰）`});
+  if(N>=4) items.push({nm:'中间坡坡度 ≥8‰', ok:g[1]>=8, vl:`当前 ${fmt(g[1],1)}‰（规范 ≥8‰）`, warn:g[1]>=5&&g[1]<8});
+  items.push({nm:'道岔区坡平均坡度 ≤2.5‰（边缘≤3.5‰）', ok:g[N-2]<=3.5, vl:`当前 ${fmt(g[N-2],1)}‰`, warn:g[N-2]<=3.5&&g[N-2]>2.5});
+  items.push({nm:'打靶区坡度 0.6~1.0‰', ok:g[N-1]>=0.6&&g[N-1]<=1.0, vl:`当前 ${fmt(g[N-1],1)}‰`, warn:g[N-1]>=0&&g[N-1]<0.6});
+  items.push({nm:'前陡后缓凹形纵断面', ok:g.every((v,i)=>i===0||v<=g[i-1]+0.5), vl:'坡度单调递减'});
+  items.push({nm:'冬季难行车溜到位（末速≥1.4 m/s）', ok:meta.vEndHard>=1.4, vl:`末速 ${fmt(meta.vEndHard,2)} m/s`});
+  items.push({nm:'夏季易行车不超速（≤7 m/s）', ok:meta.vMaxEasy<=7.0, vl:`最大速度 ${fmt(meta.vMaxEasy,2)} m/s`});
+  items.push({nm:'减速器制动能高满足安全余量', ok:true, vl:`减速器 ${meta.nSec} 节（含15%~20%余量）`, warn:false});
+  const box=$('check-list'); box.innerHTML='';
+  items.forEach(it=>{
+    const cls=it.ok?'ok':(it.warn?'warn':'bad');
+    const ico=it.ok?'✓':(it.warn?'!':'✗');
+    box.innerHTML+=`<div class="check-item ${cls}"><span class="ico">${ico}</span><div class="ct"><div class="nm">${esc(it.nm)}</div><div class="vl">${esc(it.vl)}</div></div></div>`;
+  });
+}
+
+function renderCapacity(meta,cfg){
+  const M=parseInt($('in-machines').value);
+  const mCar=50, Lcar=mCar*14, alpha0=0.04;
+  const vCap=meta.vCap;
+  const Bpeak=3600*M*(1-alpha0)*vCap*mCar/Lcar;
+  const daily=Bpeak*24/parseFloat($('in-peak').value);
+  const vEndHard=meta.vEndHard;
+  const interval = vEndHard>=1.4? '达标' : '追钩/溜不到位风险';
+  $('check-capacity').innerHTML=`
+    <div class="grid cols-2" style="gap:12px">
+      <div class="stat blue"><span class="bar-inline"></span><div class="k">最大允许推峰速度</div><div class="v">${fmt(vCap,2)}<small>m/s</small></div></div>
+      <div class="stat green"><span class="bar-inline"></span><div class="k">高峰小时解体能力（估算）</div><div class="v">${fmt(Bpeak,0)}<small>辆/h</small></div></div>
+      <div class="stat violet"><span class="bar-inline"></span><div class="k">日解体能力（估算）</div><div class="v">${fmt(daily,0)}<small>辆/日</small></div></div>
+      <div class="stat ${vEndHard>=1.4?'green':'amber'}"><span class="bar-inline"></span><div class="k">冬季难行车末速</div><div class="v">${fmt(vEndHard,2)}<small>m/s · ${interval}</small></div></div>
+    </div>
+    <div class="conclusion ${vEndHard>=1.4?'info':'warn'}">
+      <strong>间隔检算：</strong>最后分路道岔处难行车速度 ${fmt(speedAt(meta.simHardWinter,cfg.xSwitch*cfg.L),2)} m/s，推峰速度 ${fmt(vCap,2)} m/s 时需 ≥ ${fmt(2.28*vCap,2)} m/s —— ${speedAt(meta.simHardWinter,cfg.xSwitch*cfg.L)>=2.28*vCap?'<b>满足</b>道岔转换安全间隔':'<b>不满足</b>，存在追钩风险，建议加陡纵断面或增设间隔制动位'}。
+    </div>`;
+}
+
+function renderAdvice(meta,cfg){
+  const g=meta.grades, N=cfg.N, H=meta.prof[0].h;
+  const M=parseInt($('in-machines').value);
+  const mCar=50, Lcar=mCar*14, alpha0=0.04;
+  const Bpeak=3600*M*(1-alpha0)*meta.vCap*mCar/Lcar;
+  const daily=Bpeak*24/parseFloat($('in-peak').value);
+
+  // —— 综合结论（随当前方案实时变化） ——
+  const wOk=meta.vEndHard>=1.4, sOk=meta.vMaxEasy<=7.0, gradOk=meta.pen<=1e-6;
+  const overallOk=wOk&&sOk&&gradOk;
+  const prob=[];
+  if(!wOk) prob.push('冬季难行车溜不到位');
+  if(!sOk) prob.push('夏季易行车超速');
+  if(!gradOk) prob.push('部分坡度偏离规范');
+  const overallTxt=overallOk
+    ? `本方案在冬季（难行车）与夏季（易行车）两种工况下均满足约束，纵断面呈前陡后缓凹形，各坡段坡度符合规范，整体设计合理，可直接采用。`
+    : `本方案存在 <b>${prob.join('、')}</b> 问题，建议按下述改进建议调整后方可采用。`;
+
+  // —— 结论要点（量化） ——
+  const mid=g.slice(1,N-2).map(v=>fmt(v,1)).join(' / ');
+  const pts=[];
+  pts.push(`峰高 <b>H = ${fmt(H,2)} m</b>${H>=cfg.Hmin&&H<=cfg.Hmax?`（在允许范围 [${fmt(cfg.Hmin,1)}~${fmt(cfg.Hmax,1)}] m 内）`:`（<b>超出</b>允许范围 [${fmt(cfg.Hmin,1)}~${fmt(cfg.Hmax,1)}] m）`}，对应土石方成本约 ${fmt(meta.costEarth,0)} 万元。`);
+  pts.push(`最大允许推峰速度 <b>${fmt(meta.vCap,2)} m/s</b>，据此估算高峰小时解体能力约 <b>${fmt(Bpeak,0)} 辆/h</b>、日解体能力约 <b>${fmt(daily,0)} 辆/日</b>（${M} 台机车、高峰系数 ${$('in-peak').value}）。`);
+  pts.push(`冬季难行车末速 <b>${fmt(meta.vEndHard,2)} m/s</b>（${wOk?'≥1.4，溜放到位':'<1.4，溜不到位'}），冬季可靠性 ${fmt(meta.winterRel*100,0)}%；夏季易行车最大速度 <b>${fmt(meta.vMaxEasy,2)} m/s</b>（${sOk?'≤7，不超速':'>7，超速'}），安全连挂率约 <b>${fmt(meta.coupling,0)}%</b>。`);
+  pts.push(`减速设备：减速器 <b>${meta.nSec} 节</b>、减速顶 <b>${meta.D} 个</b>（合计 ${meta.equip} 项），工程估算成本约 <b>${fmt(meta.cost,0)} 万元</b>（土石方 ${fmt(meta.costEarth,0)} + 减速器 ${fmt(meta.costRet,0)} + 减速顶 ${fmt(meta.costTop,1)}）。`);
+  pts.push(`纵断面坡度：加速坡 <b>${fmt(g[0],1)}‰</b>（规范 ≤55）→ 中间坡 ${mid||'—'}‰（规范 ≥8）→ 道岔区 <b>${fmt(g[N-2],1)}‰</b>（规范 ≤2.5）→ 打靶区 <b>${fmt(g[N-1],1)}‰</b>（规范 0.6~1.0）。`);
+
+  // —— 改进建议（具体、量化） ——
+  const sug=[];
+  if(!wOk) sug.push(`<b>解决冬季溜不到位</b>：末速 ${fmt(meta.vEndHard,2)} m/s 低于 1.4，需补足能高。建议将峰高由 ${fmt(H,2)} m 提高约 ${fmt(Math.max(0.1,(1.4-meta.vEndHard)*0.6),2)}~0.3 m，或按前陡后缓原则加陡加速坡/中间坡。`);
+  else if(meta.vEndHard<1.7) sug.push(`冬季末速 ${fmt(meta.vEndHard,2)} m/s 贴近 1.4 临界值，安全裕量偏小，建议将峰高再提高 0.05~0.1 m，或微调中间坡以增大末速余量。`);
+  else if(meta.vEndHard>2.8) sug.push(`冬季末速 ${fmt(meta.vEndHard,2)} m/s 明显偏高，峰高存在冗余，可适当降低峰高（如 ${fmt(Math.max(cfg.Hmin,H-0.3),2)} m）以节省土石方投资（当前土石方 ${fmt(meta.costEarth,0)} 万元）。`);
+
+  if(!sOk) sug.push(`<b>解决夏季超速</b>：最大速度 ${fmt(meta.vMaxEasy,2)} m/s 超过 7，建议放缓道岔区坡（当前 ${fmt(g[N-2],1)}‰ → ≤2.5‰），或增加减速器节数以提高制动能高。`);
+  else if(meta.vMaxEasy>6.3) sug.push(`夏季最大速度 ${fmt(meta.vMaxEasy,2)} m/s 接近 7 m/s 限速，高温低阻力工况下存在超速风险，建议预留 0.5 m/s 以上余量（放缓道岔区坡或增加制动能高）。`);
+
+  if(g[0]>50) sug.push(`加速坡 ${fmt(g[0],1)}‰ 接近 55‰ 内燃粘着上限，建议放缓至 45~50‰，兼顾牵引能力与溜放动能。`);
+  if(g[N-2]>2.5) sug.push(`道岔区坡 ${fmt(g[N-2],1)}‰ 超过 2.5‰ 平均值（边缘允许 3.5‰），过岔阻力增大，建议放缓。`);
+  if(g[N-1]<0.6||g[N-1]>1.0) sug.push(`打靶区坡度 ${fmt(g[N-1],1)}‰ 不在 0.6~1.0‰ 规范区间，建议调整至该区间以稳定连挂速度。`);
+  if(meta.nSec>12) sug.push(`减速器 ${meta.nSec} 节偏多，可优化中间坡坡度降低入口速度，或增设间隔制动位以分担制动。`);
+  if(!gradOk) sug.push(`方案存在坡度约束偏离（总偏离量 ${fmt(meta.pen,2)}），优先修正上述违反项后再评估其他指标。`);
+
+  if(sug.length===0) sug.push('各项指标均在规范允许范围内且留有合理裕量，无需进一步调整，可作为推荐方案直接采用。');
+
+  const item=(s,cls,ico,bg)=>`<div class="check-item ${cls}"><span class="ico" style="${bg}">${ico}</span><div class="ct"><div class="vl" style="font-size:12.5px;color:var(--text);line-height:1.65">${s}</div></div></div>`;
+  $('check-advice').innerHTML =
+    `<div class="conclusion ${overallOk?'info':'warn'}"><strong>综合结论：</strong>${overallTxt}</div>`
+    + `<div class="sub" style="margin:14px 0 6px;font-weight:700;color:var(--text)">① 结论要点</div>`
+    + pts.map(p=>item(p,'ok','•','background:var(--primary)')).join('')
+    + `<div class="sub" style="margin:14px 0 6px;font-weight:700;color:var(--text)">② 改进建议</div>`
+    + sug.map(s=>item(s,'warn','i','background:var(--violet)')).join('')
+    + `<div class="conclusion info" style="margin-top:14px"><strong>算法说明：</strong>本模型高度非线性，支持 MOPSO 多目标粒子群、NSGA-II 多目标遗传、ALNS 自适应大邻域搜索三种算法求解连续纵断面变量。</div>`;
+}
+
+/* ---------- 能高线分析（能高法） ---------- */
+function renderEnergy(s, cfg){
+  const veh=VEHICLES.hard, cond=cfg.wWinter, vpush=1.4;
+  const ea=energyAnalysis(s.prof, veh, cond, vpush);
+  const c=makeChart('chart-energy');
+  const L=cfg.L;
+  const ymax=Math.max(0.5, ...ea.map(p=>p.total))*1.12;
+  c.grid(0,L,0,ymax);
+  c.axes(0,L,0,ymax, v=>fmt(v,0), v=>fmt(v,2));
+  c.line(ea.map(p=>[p.x,p.total]),0,L,0,ymax,'#1d4ed8',2);   // 总能高
+  c.line(ea.map(p=>[p.x,p.res]),0,L,0,ymax,'#dc2626',2);      // 阻力能高（累计）
+  c.line(ea.map(p=>[p.x,p.kin]),0,L,0,ymax,'#16a34a',2);      // 动能高
+  const hv0=ea[0].total;
+  c.line([[0,hv0],[L,hv0]],0,L,0,ymax,'#9ca3af',1,'4 3');     // 初始动能高参考线
+  c.text(c.x(L*0.98,0,L), c.y(hv0,0,ymax)-4, '初始动能高', {color:'#9ca3af',size:10,anchor:'end'});
+  c.text(c.W/2,13,'能高线（难行车·冬季 自由溜放）',{color:'#6b7280',size:11});
+  $('legend-energy').innerHTML=`<span class="li"><span class="sw" style="background:#1d4ed8"></span>总能高（初始动能+势能）</span><span class="li"><span class="sw" style="background:#dc2626"></span>阻力能高（累计）</span><span class="li"><span class="sw" style="background:#16a34a"></span>动能高</span><span class="li"><span class="sw" style="background:#9ca3af"></span>初始动能高</span>`;
+  renderEnergyBreakdown(ea, s, cfg, veh, vpush);
+}
+function renderEnergyBreakdown(ea, s, cfg, veh, vpush){
+  const last=ea[ea.length-1];
+  const gp=gPrime(veh.Q, veh.n);
+  const Es=last.sw*1000, Ec=last.curve*1000;
+  const f3=v=>fmt(v,3);
+  const vEnd=Math.sqrt(2*gp*Math.max(0,last.kin));
+  const box=$('energy-breakdown');
+  box.innerHTML=`
+    <table>
+      <thead><tr><th>阻力能高分量</th><th style="text-align:right">数值(m)</th><th>说明 / 公式</th></tr></thead>
+      <tbody>
+        <tr><td>基本阻力能高 h₀</td><td class="num" style="text-align:right">${f3(last.base)}</td><td>r₀·L/1000（滚动轴承+空气阻力）</td></tr>
+        <tr><td>风阻力能高 h_w</td><td class="num" style="text-align:right">${f3(last.wind)}</td><td>r_w·L/1000（正面逆风）</td></tr>
+        <tr><td>道岔阻力能高 h_s</td><td class="num" style="text-align:right">${f3(last.sw)}</td><td>E_s/1000 = [c逆N逆+c顺(N顺+N菱)+c交N交]/1000</td></tr>
+        <tr><td>曲线阻力能高 h_c</td><td class="num" style="text-align:right">${f3(last.curve)}</td><td>E_c/1000 = 8·θ总/1000</td></tr>
+        <tr><td><b>阻力能高合计</b></td><td class="num" style="text-align:right"><b>${f3(last.res)}</b></td><td>h₀ + h_w + h_s + h_c</td></tr>
+        <tr><td>总能高（末点）</td><td class="num" style="text-align:right">${f3(last.total)}</td><td>初始动能高 ${f3(ea[0].total)} m + 峰高势能 ${f3(s.prof[0].h)} m</td></tr>
+        <tr><td>动能高（末点）</td><td class="num" style="text-align:right">${f3(last.kin)}</td><td>对应溜放末速 ${fmt(vEnd,2)} m/s</td></tr>
+      </tbody>
+    </table>
+    <div class="hint" style="margin-top:10px">本方案：逆向道岔 <b>${cfg.nRev}</b> 组、顺向 <b>${cfg.nFwd}</b> 组、菱形 <b>${cfg.nDia}</b> 组、交分 <b>${cfg.nSlip}</b> 组，曲线总转角 <b>${fmt(cfg.thetaCurve,0)}</b>°；道岔阻力功 E_s ≈ ${fmt(Es,0)} N·m/kN，曲线阻力功 E_c ≈ ${fmt(Ec,0)} N·m/kN。减速器制动能高另按夏季易行车在入口前消除超速动能计（本图仅示自由溜放）。</div>`;
+}
+
+/* ---------- 平面展开图（复刻 switchyard.top/hump 的 HumpLayoutCtrl 画法） ---------- */
+/* 原站画法：横向基线为溜放线；控制点ID（灰，虚线下引）与区段长度（黑）标注于基线上方、
+   曲线转角（蓝）标注于下方；道岔（深蓝）= 垂直尖轨 + 分岔尾线；减速器（绿）= 制动位矩形。 */
+function formatDeg(D){ // 复刻原站 K()：十进制度 → X°Y'Z''
+  const H=Math.abs(D);
+  let ce=Math.floor(H), mi=Math.floor((H-ce)*60), se=Math.round(((H-ce)*60-mi)*60);
+  if(se===60){se=0;mi+=1;} if(mi===60){mi=0;ce+=1;}
+  let s=(D<0?'-':'')+ce+'°';
+  if(mi>0)s+=mi+"'";
+  if(se>0)s+=se+"''";
+  return s;
+}
+function buildFlatLayout(cfg, s){
+  const L=cfg.L;
+  const segs=(s.segs&&s.segs.length)?s.segs:segmentsOf(s.prof);   // 方案坡段（随方案变化）
+  const n=segs.length;
+  const lines=parseInt($('in-lines').value)||16;
+  const tp=trackParams(lines);
+  const nSwitch=(cfg.nRev!=null)?cfg.nRev:tp.nSwitch;
+  const thetaCurve=(cfg.thetaCurve!=null)?cfg.thetaCurve:tp.curveDeg;
+  const mk=(id,x)=>({id, x:Math.round(x*10)/10});
+  const pts=[];
+
+  // 控制点 = 当前方案纵断面变坡点（随方案 s 变化）
+  pts.push(mk('峰顶', segs[0].x0));
+  let mid=0;
+  for(let j=1;j<n-2;j++){ mid++; pts.push(mk(mid===1?'中间坡':'中间坡'+mid, segs[j].x0)); }
+  pts.push(mk('道岔区', segs[n-2].x0));      // 道岔区坡始端
+  pts.push(mk('打靶区', segs[n-1].x0));      // 打靶区始端
+  // 道岔设备位置固定（不优化）、减速器短段位置固定
+  pts.push(mk('道岔', cfg.xSwitch*L), mk('终点', L));
+  const half=Math.max(2, L*0.005);           // 制动段半长（更短，避免与变坡点挤在一起）
+  ['Ⅰ','Ⅱ','Ⅲ'].forEach((nm,i)=>{
+    const fr=[cfg.xRetarderI,cfg.xRetarderII,cfg.xRetarderIII][i];
+    pts.push(mk(nm+'起', fr*L-half), mk(nm+'止', fr*L+half));
+  });
+
+  const positions=pts.slice().sort((a,b)=>a.x-b.x);
+  const segments=[];
+  for(let i=0;i<positions.length-1;i++){
+    const a=positions[i], b=positions[i+1];
+    const isCurve=a.id==='道岔';             // 道岔设备→下一控制点 之间设曲线
+    segments.push({id:'区段'+(i+1), startPositionID:a.id, endPositionID:b.id,
+      length:Math.round((b.x-a.x)*10)/10,
+      curveDegree:isCurve?thetaCurve:0, curveDirection:isCurve?'Left':'None'});
+  }
+  const switches=[];
+  for(let i=0;i<nSwitch;i++) switches.push({id:'道岔'+(i+1), bindingPositionID:'道岔',
+    type:'Single', direction:'Reverse', side:i%2===0?'Left':'Right'});   // 逆向单开、左右交替
+  const nSec=(s.meta&&s.meta.nSec)||0;
+  const per=[Math.ceil(nSec/3), Math.ceil(nSec/3), Math.max(0,nSec-2*Math.ceil(nSec/3))];
+  const retarders=[];
+  ['Ⅰ','Ⅱ','Ⅲ'].forEach((nm,i)=>{
+    const seg=segments.find(sg=>sg.startPositionID===nm+'起' && sg.endPositionID===nm+'止');
+    if(seg && per[i]>0) retarders.push({id:'减速'+(i+1), bindingPositionSegmentID:seg.id, numberArray:[per[i]]});
+  });
+
+  // 坡段（供坡段名称 / 底色带使用）：每个纵断面坡段的名称与范围
+  const names=['加速坡']; for(let j=1;j<n-2;j++) names.push('中间坡'); names.push('道岔区坡'); names.push('打靶区');
+  const slopes=segs.map((sg,j)=>({name:names[j]||'坡段', x0:sg.x0, x1:sg.x1, grade:sg.grade, h0:sg.h0, h1:sg.h1}));
+
+  return {positions, segments, switches, retarders, nSwitch, thetaCurve, slopes, n, nSec, per};
+}
+function renderPlan(s, cfg){
+  const el=$('chart-plan'); if(!el) return;
+  el.innerHTML='';
+  const L=cfg.L;
+  const FL=buildFlatLayout(cfg, s);
+  const hHump=s.prof[0].h;                    // 峰高 H
+
+  // 复刻 HumpLayoutCtrl 坐标系：scaleX=3.5，左距（预留推送线/峰顶），基线 Y=100，横向滚动
+  const scaleX=3.5, leftMargin=90, W=100, HG=205;
+  const minX=0;
+  const px=x=>(x-minX)*scaleX+leftMargin;
+  const totalWidth=Math.round(leftMargin+L*scaleX+90);
+  el.style.overflowX='auto'; el.style.overflowY='hidden';
+  const svg=document.createElementNS(SVGNS,'svg');
+  svg.setAttribute('width',totalWidth); svg.setAttribute('height',HG);
+  svg.style.width=totalWidth+'px'; svg.style.height=HG+'px'; svg.style.display='block';
+  el.appendChild(svg);
+  const A=(t,a)=>{const e=document.createElementNS(SVGNS,t);for(const k in a) if(a[k]!=null&&a[k]!==undefined) e.setAttribute(k,a[k]); svg.appendChild(e); return e;};
+  const T=(x,y,str,fill,size)=>{const e=A('text',{x,y,'font-size':size||12,fill,'text-anchor':'middle','-webkit-user-select':'none'}); e.textContent=str; return e;};
+
+  // 控制点渲染位置（复刻 ae：按 x 排序，重叠则向上堆叠）
+  const posById={}; FL.positions.forEach(p=>posById[p.id]=p);
+  const posList=FL.positions.map(p=>({id:p.id,x:px(p.x)})).sort((a,b)=>a.x-b.x);
+  const posRender=[]; let py=W-50, pprev=-Infinity;
+  posList.forEach(p=>{ if(p.x-pprev<25) py-=15; else py=W-50; pprev=p.x; posRender.push({id:p.id,x:p.x,y:py}); });
+
+  // 区段渲染位置（复刻 Ee + ot + z）
+  const segs=[];
+  FL.segments.forEach(sg=>{
+    const a=posById[sg.startPositionID], b=posById[sg.endPositionID];
+    if(!a||!b) return;
+    const sx=px(a.x), ex=px(b.x), C=sg.curveDegree||0, hasCurve=C>0;
+    const deltaY=(sg.curveDirection==='Left')?5:(sg.curveDirection==='Right')?-5:0;
+    segs.push({id:sg.id,startX:sx,endX:ex,centerX:(sx+ex)/2,y:W+deltaY,deltaY,hasCurve,
+      curveDegreeLabel:hasCurve?formatDeg(C):'', lengthText:String(sg.length)});
+  });
+  const byC=segs.slice().sort((a,b)=>a.centerX-b.centerX);
+  const lengthY={}; let ly=W-10, lp=-Infinity;
+  byC.forEach(e=>{ if(e.centerX-lp<35) ly-=15; else ly=W-10; lengthY[e.id]=ly; lp=e.centerX; });
+  const curveY={}; let cy=W+15, cp=-Infinity;
+  byC.forEach(e=>{ if(e.hasCurve){ if(e.centerX-cp<55) cy+=15; else cy=W+14+e.deltaY; curveY[e.id]=cy; cp=e.centerX; } });
+  const segRender=segs.map(e=>({...e, lengthY:lengthY[e.id]??W-10, curveDegreeY:curveY[e.id]??W+e.deltaY+15}));
+
+  // 道岔渲染：逆向单开，均匀散布于道岔区（复刻 Le + Gt 几何）
+  const swRender=[];
+  const za=posById['道岔区'], zb=posById['打靶区'];
+  FL.switches.forEach((sw,i)=>{
+    const bx=(za&&zb&&FL.switches.length>0)?(za.x+(zb.x-za.x)*(i+0.5)/FL.switches.length):cfg.xSwitch*L;
+    const x=px(bx); let dx=0,dy=0;
+    if(sw.type==='Single'||sw.type==='Slip'){
+      if(sw.direction==='Forward'){ dx=-50; dy=(sw.side==='Left')?15:-15; }
+      else if(sw.direction==='Reverse'){ dx=50; dy=(sw.side==='Left')?-15:15; }
+    }
+    swRender.push({x, tailX:x+dx, tailY:W+dy});
+  });
+
+  // 减速器渲染（复刻 $e）
+  const rdRender=[];
+  FL.retarders.forEach(rd=>{
+    const sg=FL.segments.find(x=>x.id===rd.bindingPositionSegmentID); if(!sg) return;
+    const a=posById[sg.startPositionID], b=posById[sg.endPositionID]; if(!a||!b) return;
+    const sx=px(a.x), ex=px(b.x);
+    rdRender.push({x:Math.min(sx,ex), width:Math.abs(ex-sx), labelX:(sx+ex)/2, label:(rd.numberArray||[]).join('+')});
+  });
+
+  // 0) 底色带：道岔区（浅蓝）、打靶区（浅绿）——对应纵断面道岔区坡 / 打靶区坡
+  const xTop=px(0), xEnd=px(L);
+  if(za&&zb){
+    A('rect',{x:px(za.x),y:0,width:px(zb.x)-px(za.x),height:HG,fill:'#dbeafe','fill-opacity':0.35});
+    A('rect',{x:px(zb.x),y:0,width:xEnd-px(zb.x),height:HG,fill:'#dcfce7','fill-opacity':0.4});
+  }
+
+  // 0.5) 推送线（峰顶左侧，虚线）+ 峰顶标记
+  const px0=px(0);
+  A('line',{x1:leftMargin-62,x2:px0,y1:W,y2:W,stroke:'#9ca3af','stroke-width':1.5,'stroke-dasharray':'6 4','stroke-linecap':'round'});
+  T(px0-31, W-14, '推送线', '#6b7280', 10);
+  A('polygon',{points:`${px0-6},${W-13} ${px0+6},${W-13} ${px0},${W}`, fill:'#dc2626'});
+  T(px0, W-26, '峰高 H='+fmt(hHump,2)+'m', '#dc2626', 10.5);
+
+  // 1) 区段基线 + 曲线连接线 + 曲线转角（复刻原站渲染顺序）
+  segRender.forEach(U=>{
+    A('line',{x1:U.startX,x2:U.endX,y1:U.y,y2:U.y,stroke:'#000','stroke-width':2.5,'stroke-linecap':'round'});
+    if(U.hasCurve){
+      A('line',{x1:U.startX,y1:W,x2:U.startX,y2:U.y,stroke:'#000','stroke-width':2.5,'stroke-linecap':'round'});
+      A('line',{x1:U.endX,y1:W,x2:U.endX,y2:U.y,stroke:'#000','stroke-width':2.5,'stroke-linecap':'round'});
+      T(U.centerX,U.curveDegreeY,U.curveDegreeLabel,'#3d90d7');
+    }
+  });
+  // 2) 区段长度
+  segRender.forEach(U=>{ T(U.centerX,U.lengthY,U.lengthText,'#000'); });
+  // 3) 控制点 ID + 虚线
+  posRender.forEach(P=>{
+    T(P.x,P.y,P.id,'#808080');
+    A('line',{x1:P.x,x2:P.x,y1:P.y,y2:W,stroke:'#808080','stroke-width':0.5,'stroke-dasharray':'4 2','stroke-linecap':'round'});
+  });
+  // 4) 道岔：垂直尖轨 + 分岔尾线
+  swRender.forEach(S=>{
+    A('line',{x1:S.x,x2:S.x,y1:W-5,y2:W+5,stroke:'#124170','stroke-width':2,'stroke-linecap':'round'});
+    A('line',{x1:S.x,y1:W,x2:S.tailX,y2:S.tailY,stroke:'#124170','stroke-width':2,'stroke-linecap':'round'});
+  });
+  // 5) 减速器：绿色矩形 + 节数
+  rdRender.forEach(R=>{
+    A('rect',{x:R.x,y:W-10,width:R.width,height:20,fill:'#008000','fill-opacity':0.5,stroke:'#000','stroke-width':1});
+    T(R.labelX,W+25,R.label,'#008000');
+  });
+
+  // 6) 坡段名称（加速坡/中间坡/道岔区坡/打靶区）标注于基线下方的坡段中部
+  const nameY=W+46;
+  FL.slopes.forEach(sl=>{
+    const sx=px(sl.x0), ex=px(sl.x1);
+    if(ex-sx<28) return;
+    T((sx+ex)/2, nameY, sl.name+' '+fmt(sl.grade,1)+'‰', '#475569', 10.5);
+  });
+  // 道岔数量标注（道岔区内）
+  if(za&&zb&&FL.nSwitch>0){
+    T(px((za.x+zb.x)/2), W+30, '逆向道岔 ×'+FL.nSwitch, '#124170', 11);
+  }
+
+  // 7) 里程轴
+  const axY=W+68, lbY=W+84;
+  A('line',{x1:xTop,x2:xEnd,y1:axY,y2:axY,stroke:'#9ca3af','stroke-width':1,'stroke-linecap':'round'});
+  const tickN=10;
+  for(let i=0;i<=tickN;i++){
+    const mx=px(0+i*L/tickN);
+    A('line',{x1:mx,x2:mx,y1:axY-4,y2:axY+4,stroke:'#9ca3af','stroke-width':1});
+    T(mx, lbY, i===0?'0':Math.round(i*L/tickN)+'m', '#6b7280', 9.5);
+  }
+  T(xEnd+40, lbY, '里程 →', '#9ca3af', 10);
+
+  // 图例
+  $('legend-plan').innerHTML=`<span class="li"><span class="sw" style="background:#000"></span>区段基线</span><span class="li"><span class="sw" style="background:#808080"></span>控制点(变坡点)</span><span class="li"><span class="sw" style="background:#124170"></span>道岔</span><span class="li"><span class="sw" style="background:#008000"></span>减速器</span><span class="li"><span class="sw" style="background:#3d90d7"></span>曲线转角</span><span class="li"><span class="sw" style="background:#dc2626"></span>峰顶</span><span class="li"><span class="sw" style="background:#9ca3af"></span>推送线/里程</span>`;
+
+  renderPlanSummary(s, cfg, FL);
+}
+function renderPlanSummary(s, cfg, FL){
+  const m=s.meta||{};
+  const box=$('plan-summary'); if(!box) return;
+  const row=(k,v)=>`<tr><td>${k}</td><td class="num" style="text-align:right">${v}</td></tr>`;
+  const nSec=m.nSec||0;
+  const per=FL.per||[Math.ceil(nSec/3), Math.ceil(nSec/3), Math.max(0,nSec-2*Math.ceil(nSec/3))];
+  const za=FL.positions.find(p=>p.id==='道岔区'), zb=FL.positions.find(p=>p.id==='打靶区');
+  box.innerHTML=`
+    <table>
+      <thead><tr><th>平面要素</th><th style="text-align:right">数值</th></tr></thead>
+      <tbody>
+        ${row('坡段数', FL.n+' 段（加速/中间/道岔区/打靶）')}
+        ${row('控制点数', FL.positions.length+' 个')}
+        ${row('区段数', FL.segments.length+' 段')}
+        ${row('道岔（逆向单开）', FL.switches.length+' 组')}
+        ${row('曲线总转角', fmt(FL.thetaCurve,0)+'°')}
+        ${row('减速器制动位', 'Ⅰ / Ⅱ / Ⅲ')}
+        ${row('减速器节数', fmt(nSec,0)+' 节（'+per.join('+')+'）')}
+        ${row('道岔区里程', za&&zb?fmt(za.x,0)+' ~ '+fmt(zb.x,0)+' m':'—')}
+        ${row('溜放线长', fmt(cfg.L,0)+' m')}
+      </tbody>
+    </table>
+    <div class="hint" style="margin-top:10px">平面展开图画法与 switchyard.top/hump 一致：横向基线为溜放线；控制点=当前纵断面变坡点（灰，随方案变化）＋道岔/减速器固定位；区段长度（黑）标注于基线上方、曲线转角（蓝）标注于下方；道岔（深蓝）= 垂直尖轨＋分岔尾线；减速器（绿）= 制动位矩形。道岔与减速器位置固定布设、不参与优化；坡段名称与里程轴对应下方纵断面方案。</div>`;
+}
+
+/* ---------- 车型管理（三基准车可编辑） ---------- */
+let vehicleTimer=null;
+function renderVehicles(){
+  const grid=$('vehicles-grid'); if(!grid) return;
+  grid.innerHTML='';
+  const order=[['hard','难行车'],['medium','中行车'],['easy','易行车']];
+  order.forEach(([key,label])=>{
+    const v=VEHICLES[key];
+    const d=document.createElement('div'); d.className='card'; d.style.padding='14px';
+    d.innerHTML=`
+      <div style="font-weight:700;color:var(--primary-700);font-size:13.5px;margin-bottom:2px">${esc(label)}</div>
+      <div class="field" style="margin-top:6px"><label>车型备注</label><input class="inp" id="veh-${key}-type" value="${esc(v.type)}"></div>
+      <div class="field"><label>总重 Q <span class="unit">t</span></label><input class="inp" id="veh-${key}-Q" type="number" value="${v.Q}" min="1" max="200" step="0.5"></div>
+      <div class="field"><label>迎风面积 f <span class="unit">m²</span></label><input class="inp" id="veh-${key}-f" type="number" value="${v.f}" min="0.5" max="60" step="0.1"></div>
+      <div class="field"><label>轴数 n</label><input class="inp" id="veh-${key}-n" type="number" value="${v.n}" min="1" max="8" step="1"></div>`;
+    grid.appendChild(d);
+  });
+  grid.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',()=>{
+    if($('btn-run').disabled) return;
+    clearTimeout(vehicleTimer);
+    vehicleTimer=setTimeout(()=>{ readVehicles(); regenInitial(); },200);
+  }));
+}
+function readVehicles(){
+  ['hard','medium','easy'].forEach(key=>{
+    const v=VEHICLES[key];
+    const q=parseFloat($(`veh-${key}-Q`).value);
+    const f=parseFloat($(`veh-${key}-f`).value);
+    const n=parseFloat($(`veh-${key}-n`).value);
+    if(!isNaN(q)&&q>0) v.Q=q;
+    if(!isNaN(f)&&f>0) v.f=f;
+    if(!isNaN(n)&&n>0) v.n=n;
+    const t=$(`veh-${key}-type`).value; if(t && t.trim()) v.type=t.trim();
+  });
+}
+
+function renderProfileDetail(s, cfg){
+  renderProfileChart(s.prof, cfg);
+  const st=$('profile-stats');
+  st.innerHTML=`
+    <div class="stat blue"><span class="bar-inline"></span><div class="k">峰高 H</div><div class="v">${fmt(s.prof[0].h,2)}<small>m</small></div></div>
+    <div class="stat green"><span class="bar-inline"></span><div class="k">最大推峰速度</div><div class="v">${fmt(s.meta.vCap,2)}<small>m/s</small></div></div>
+    <div class="stat violet"><span class="bar-inline"></span><div class="k">减速器节数</div><div class="v">${s.meta.nSec}<small>节</small></div></div>
+    <div class="stat amber"><span class="bar-inline"></span><div class="k">减速顶数量</div><div class="v">${s.meta.D}<small>个</small></div></div>
+    <div class="stat teal"><span class="bar-inline"></span><div class="k">工程总成本(估算)</div><div class="v">${fmt(s.meta.cost,0)}<small>万元</small></div></div>
+    <div class="stat blue"><span class="bar-inline"></span><div class="k">冬季末速</div><div class="v">${fmt(s.meta.vEndHard,2)}<small>m/s</small></div></div>
+    <div class="stat green"><span class="bar-inline"></span><div class="k">安全连挂率</div><div class="v">${fmt(s.meta.coupling,0)}<small>%</small></div></div>
+    <div class="stat amber"><span class="bar-inline"></span><div class="k">夏季最大速度</div><div class="v">${fmt(s.meta.vMaxEasy,2)}<small>m/s</small></div></div>`;
+  // 坡段表
+  const tb=$('profile-table').querySelector('tbody'); tb.innerHTML='';
+  const segs=s.segs;
+  const names=['加速坡']; for(let j=1;j<segs.length-2;j++) names.push('中间坡'); if(segs.length>=3){ names.push('道岔区坡'); } if(segs.length>=4){ names.push('打靶区'); }
+  segs.forEach((sg,j)=>{ tb.innerHTML+=`<tr><td>${j+1}</td><td>${names[j]||'坡段'}</td><td class="num">${fmt(sg.len,1)}</td><td class="num">${fmt(sg.grade,2)}</td><td class="num">${fmt(sg.h0,2)}</td><td class="num">${fmt(sg.h1,2)}</td></tr>`; });
+  $('profile-src').textContent = s.label?`来源：${s.label}`:'来源：Pareto 最优解';
+  renderEnergy(s, cfg);
+  renderPlan(s, cfg);
+}
+function renderProfilePanel(){
+  const cfg=state.cfg;
+  const sel=$('profile-select');
+  const currentVal=sel.value;
+  sel.innerHTML='';
+  const list=state.archive.length?state.archive:[{meta:evaluate(decode(defaultVec(cfg),cfg),cfg).meta, prof:defaultProfile(cfg), label:'初始方案（规范模板）'}];
+  list.forEach((s,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=`方案${i+1} · 成本 ${fmt(s.meta.cost,0)}万 · 推峰 ${fmt(s.meta.vCap,2)}m/s`; sel.appendChild(o); });
+  if(currentVal!=='' && parseInt(currentVal)<list.length) sel.value=currentVal;
+  const idx=Math.min(parseInt(sel.value),list.length-1);
+  const s=list[idx];
+  state.selected=s;
+  renderProfileDetail(s, cfg);
+}
+
+function defaultVec(cfg){ // 把默认纵断面压回一个合法变量向量
+  const prof=defaultProfile(cfg);
+  const N=cfg.N, nb=N-1, L=cfg.L, H=prof[0].h;
+  const v=[H];
+  for(let k=0;k<nb;k++) v.push(prof[k+1].x/L);
+  for(let k=0;k<nb;k++) v.push(prof[k+1].h/H);
+  return v;
+}
+
+function renderParetoTable(){
+  const cfg=state.cfg;
+  const objIdx=cfg.objIdx;
+  const head=$('pareto-head'), body=$('pareto-body');
+  head.innerHTML='<th>#</th><th>峰高(m)</th>'+objIdx.map(o=>`<th>${esc(OBJDEF[o].name)}</th>`).join('')+'<th>减速器(节)</th><th>减速顶(个)</th><th>冬季末速(m/s)</th><th>约束</th>';
+  // 按第一个目标排序
+  const arr=state.archive.slice().sort((a,b)=>{ const d=OBJDEF[objIdx[0]].dir; return d==='min'?a.meta[objIdx[0]]-b.meta[objIdx[0]]:b.meta[objIdx[0]]-a.meta[objIdx[0]]; });
+  body.innerHTML='';
+  arr.forEach((s,i)=>{
+    const bad=s.pen>0.01;
+    body.innerHTML+=`<tr data-i="${i}" class="${state.selected===s?'selected':''}">
+      <td>${i+1}</td><td class="num">${fmt(s.prof[0].h,2)}</td>
+      ${objIdx.map(o=>`<td class="num">${fmt(s.meta[o],2)}</td>`).join('')}
+      <td class="num">${s.meta.nSec}</td><td class="num">${s.meta.D}</td><td class="num">${fmt(s.meta.vEndHard,2)}</td>
+      <td>${bad?'<span class="badge-row badge bad">违规</span>':'<span class="badge-row badge ok">可行</span>'}</td></tr>`;
+  });
+  body.querySelectorAll('tr').forEach(tr=>{ tr.addEventListener('click',()=>{ const i=parseInt(tr.dataset.i); state.selected=arr[i]; selectParetoRow(i); syncSelected(); }); });
+}
+function selectParetoRow(i){ const rows=$('pareto-body').querySelectorAll('tr'); rows.forEach((r,j)=>r.classList.toggle('selected',j===i)); }
+function syncSelected(){ if(!state.selected) return; const cfg=state.cfg; renderProfileChart(state.selected.prof,cfg); renderSpeedChart(state.selected.meta,cfg); renderCheckList(state.selected.meta,cfg); renderCapacity(state.selected.meta,cfg); renderAdvice(state.selected.meta,cfg); renderPlan(state.selected,cfg); }
+
+/* ---------- 车流适应性（蒙特卡洛） ---------- */
+function runTraffic(){
+  const cfg=state.cfg;
+  const pEmpty=parseInt($('traffic-empty').value)/100;
+  const baseProf = state.selected?state.selected.prof:defaultProfile(cfg);
+  const N=400;
+  const condW=cfg.wWinter, condS=cfg.wSummer;
+  let reach=0, couple=0, over=0;
+  const weights=[];
+  for(let i=0;i<N;i++){
+    const isEmpty=Math.random()<pEmpty;
+    let Q, f, n=4;
+    if(isEmpty){ Q=clamp(25+gauss()*3.5, 18, 34); f=11.41; }  // 空棚车
+    else { Q=clamp(88+gauss()*5, 70, 96); f=7.71; }           // 重敞车
+    weights.push(Q);
+    const veh={Q, f, n};
+    const w=simulate(baseProf,veh,condW,1.4);
+    const s=simulate(baseProf,veh,condS,1.9);
+    if(endSpeed(w)>=1.4) reach++;
+    if(endSpeed(s)<=1.4) couple++;
+    if(maxSpeed(s)>7.0) over++;
+  }
+  return {reach:reach/N*100, couple:couple/N*100, over:over/N*100, weights};
+}
+function gauss(){ let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+
+function renderTrafficHist(weights){
+  const c=makeChart('chart-traffic-hist');
+  const bins=[]; for(let i=0;i<14;i++) bins.push({x0:15+i*6, n:0});
+  weights.forEach(w=>{ const b=Math.floor((w-15)/6); if(b>=0&&b<bins.length) bins[b].n++; });
+  const ymax=Math.max(...bins.map(b=>b.n))*1.15;
+  c.grid(15,99,0,ymax);
+  c.axes(15,99,0,ymax, v=>fmt(v,0), v=>fmt(v,0));
+  const bw=(99-15)/14;
+  bins.forEach((b,i)=>{ const px=c.x(15+i*bw,15,99), h=b.n/ymax*(c.H-16-34); c.rect(px+bw*0.08, c.H-34-h, bw*0.84, h, '#2563eb'); });
+  c.text(c.W/2,13,'车辆总重分布（t）',{color:'#6b7280',size:11});
+}
+
+function renderTrafficCurve(){
+  const c=makeChart('chart-traffic-curve');
+  const cfg=state.cfg;
+  const baseProf = state.selected?state.selected.prof:defaultProfile(cfg);
+  const curPe=parseInt($('traffic-empty').value);
+  const xs=[], reach=[], couple=[], over=[];
+  const tests=[0,10,20,30,40,50,60,70,80];
+  tests.forEach(pe=>{
+    const pEmpty=pe/100; let r=0,cpl=0,ov=0; const N=150;
+    for(let i=0;i<N;i++){
+      const isEmpty=Math.random()<pEmpty;
+      let Q,f; if(isEmpty){Q=clamp(25+gauss()*3.5,18,34);f=11.41;}else{Q=clamp(88+gauss()*5,70,96);f=7.71;}
+      const veh={Q,f,n:4};
+      const w=simulate(baseProf,veh,cfg.wWinter,1.4), s=simulate(baseProf,veh,cfg.wSummer,1.9);
+      if(endSpeed(w)>=1.4)r++; if(endSpeed(s)<=1.4)cpl++; if(maxSpeed(s)>7)ov++;
+    }
+    xs.push(pe); reach.push(r/N*100); couple.push(cpl/N*100); over.push(ov/N*100);
+  });
+  c.grid(0,80,0,100);
+  c.axes(0,80,0,100, v=>v+'%', v=>v+'%');
+  c.line(xs.map((x,i)=>[x,reach[i]]),0,80,0,100,'#2563eb',2);
+  c.line(xs.map((x,i)=>[x,couple[i]]),0,80,0,100,'#16a34a',2);
+  c.line(xs.map((x,i)=>[x,over[i]]),0,80,0,100,'#dc2626',2);
+  // 当前空车比例竖标线 + 当前值散点（随滑块联动）
+  const ki=Math.max(0,Math.min(tests.length-1,Math.round(curPe/10)));
+  c.line([[curPe,0],[curPe,100]],0,80,0,100,'#f59e0b',1.5,'4 3');
+  c.scatter([[curPe,reach[ki]]],0,80,0,100,'#2563eb',5);
+  c.scatter([[curPe,couple[ki]]],0,80,0,100,'#16a34a',5);
+  c.scatter([[curPe,over[ki]]],0,80,0,100,'#dc2626',5);
+  c.text(c.x(curPe,0,80), c.y(96,0,100), `当前 ${curPe}%`, {color:'#f59e0b',size:10});
+  c.text(c.W/2,13,'空车比例（%）',{color:'#6b7280',size:11});
+  $('legend-traffic').innerHTML=`<span class="li"><span class="sw" style="background:#2563eb"></span>溜放到位率</span><span class="li"><span class="sw" style="background:#16a34a"></span>安全连挂率</span><span class="li"><span class="sw" style="background:#dc2626"></span>超速率</span><span class="li"><span class="sw" style="background:#f59e0b"></span>当前空车比例 ${curPe}%</span>`;
+}
+
+function renderTrafficRisk(){
+  const c=makeChart('chart-traffic-risk');
+  const cfg=state.cfg;
+  const extremeProf = state.selected?state.selected.prof:defaultProfile(cfg);
+  // 典型设计 = 仅按中行车（Q≈70t，远比难行车 Q≈30t 好溜）设计：按同一坡形等比缩小峰高，
+  // 使「中行车」冬季末速恰好 1.4 m/s —— 峰高明显低于极端设计，并随输入（峰高/气温/风速）实时变化
+  let kLo=0.15, kHi=1.0;
+  for(let it=0; it<14; it++){
+    const k=(kLo+kHi)/2;
+    const s=simulate(extremeProf.map(p=>({x:p.x,h:p.h*k})), VEHICLES.medium, cfg.wWinter, 1.4);
+    if(endSpeed(s)>=1.4) kHi=k; else kLo=k;
+  }
+  const kTyp=(kLo+kHi)/2;
+  const typicalProf = extremeProf.map(p=>({x:p.x, h:p.h*kTyp}));
+  const tests=[0,10,20,30,40,50,60,70,80];
+  const xs=[], fe=[], ft=[];
+  tests.forEach(pe=>{
+    const pEmpty=pe/100; let re=0,rt=0; const N=300;
+    for(let i=0;i<N;i++){
+      const isEmpty=Math.random()<pEmpty;
+      let Q,f; if(isEmpty){Q=clamp(25+gauss()*3.5,18,34);f=11.41;}else{Q=clamp(88+gauss()*5,70,96);f=7.71;}
+      const veh={Q,f,n:4};
+      const we=simulate(extremeProf,veh,cfg.wWinter,1.4), se=simulate(extremeProf,veh,cfg.wSummer,1.9);
+      const wt=simulate(typicalProf,veh,cfg.wWinter,1.4), st=simulate(typicalProf,veh,cfg.wSummer,1.9);
+      const failE = (endSpeed(we)<1.4)||(maxSpeed(se)>7.0);
+      const failT = (endSpeed(wt)<1.4)||(maxSpeed(st)>7.0);
+      if(failE)re++; if(failT)rt++;
+    }
+    xs.push(pe); fe.push(re/N*100); ft.push(rt/N*100);
+  });
+  c.grid(0,80,0,100);
+  c.axes(0,80,0,100, v=>v+'%', v=>v+'%');
+  c.line(xs.map((x,i)=>[x,fe[i]]),0,80,0,100,'#16a34a',2);
+  c.line(xs.map((x,i)=>[x,ft[i]]),0,80,0,100,'#dc2626',2);
+  // 当前空车比例竖标线 + 当前值散点（随滑块联动）
+  const curPe=parseInt($('traffic-empty').value);
+  const ki=Math.max(0,Math.min(tests.length-1,Math.round(curPe/10)));
+  c.line([[curPe,0],[curPe,100]],0,80,0,100,'#f59e0b',1.5,'4 3');
+  c.scatter([[curPe,fe[ki]]],0,80,0,100,'#16a34a',5);
+  c.scatter([[curPe,ft[ki]]],0,80,0,100,'#dc2626',5);
+  c.text(c.x(curPe,0,80), c.y(96,0,100), `当前 ${curPe}%`, {color:'#f59e0b',size:10});
+  c.text(c.W/2,13,'空车比例（%）',{color:'#6b7280',size:11});
+  $('legend-risk').innerHTML=`<span class="li"><span class="sw" style="background:#16a34a"></span>极端设计（峰高 ${fmt(extremeProf[0].h,2)} m）失效率</span><span class="li"><span class="sw" style="background:#dc2626"></span>典型设计·仅按中行车（峰高 ${fmt(typicalProf[0].h,2)} m）失效率</span><span class="li"><span class="sw" style="background:#f59e0b"></span>当前空车比例 ${curPe}%</span>`;
+  // 结论（随当前空车比例联动）
+  $('traffic-conclusion').innerHTML=`<strong>结论：</strong>当前空车比例 <b>${curPe}%</b> 下，<b>极端设计</b>（峰高 ${fmt(extremeProf[0].h,2)} m，按难行车定峰）失效率 <b>${fmt(fe[ki],1)}%</b>；<b>典型设计</b>（峰高 ${fmt(typicalProf[0].h,2)} m，仅按中行车定峰）失效率 <b>${fmt(ft[ki],1)}%</b>。两条曲线失效率分别由<b>重车夏季超速</b>（极端设计：高峰高 → 重车越多失效率越高）与<b>空车冬季溜不到位</b>（典型设计：低峰高 → 空车越多失效率越高）主导、此消彼长：高峰高的极端设计保证空车冬季溜到位，但重车夏季溜放过快易超速；低峰高的典型设计重车夏季安全，但空车冬季溜不到位。这说明<b>峰高不能固定取极值，而应随实际空重比调整</b>——这正是「车流适应性优化」的价值：按真实车流组成确定峰高与减速器配置，在安全与成本之间取得平衡。`;
+}
+
+function refreshTraffic(){
+  const cfg=state.cfg||makeCfg();
+  state.cfg=cfg;
+  $('traffic-empty-val').textContent=$('traffic-empty').value+'%';
+  const res=runTraffic();
+  renderTrafficHist(res.weights);
+  renderTrafficCurve();
+  renderTrafficRisk();
+}
+
+/* ---------- 初始方案生成（设计输入 → 输出联动） ---------- */
+function regenInitial(){
+  state.cfg=makeCfg();
+  const prof=defaultProfile(state.cfg);
+  const m=evaluate(defaultVec(state.cfg),state.cfg);
+  state.archive=[{x:defaultVec(state.cfg),obj:m.obj,prof,segs:m.segs,grades:m.grades,meta:m.meta,viol:m.violations,pen:m.penalty,label:'初始方案（规范模板）'}];
+  state.selected=state.archive[0];
+  renderProfilePanel(); syncSelected(); renderParetoTable();
+  refreshTraffic();
+  $('input-status').textContent='已按当前输入生成初始方案（峰高 '+fmt(prof[0].h,2)+' m）';
+}
+
+/* ---------- 事件绑定 ---------- */
+function bindEvents(){
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active'); $(t.dataset.panel).classList.add('active');
+    refreshVisibleCharts(t.dataset.panel);
+  }));
+  // 目标卡片（经济性目标与性能目标互斥，不能同时选择）
+  const grid=$('obj-grid');
+  Object.keys(OBJDEF).forEach(k=>{
+    const o=OBJDEF[k];
+    const grp=OBJ_GROUP[k];
+    const d=document.createElement('div'); d.className='obj-card'+(k==='cost'||k==='capacity'?' on':''); d.dataset.key=k;
+    const cfNames=CONFLICTS[k].map(c=>OBJDEF[c].name).join('、');
+    d.innerHTML=`<span class="ck">✓</span><div class="nm">${o.name}</div><div class="ds">${o.desc}</div><span class="tag ${o.tag}">${o.tag==='min'?'越小越优':'越大越优'}</span><span class="grp grp-${grp==='经济性'?'eco':'perf'}">${grp}</span><div class="cf">互斥：${cfNames}</div>`;
+    d.addEventListener('click',()=>{
+      const turningOn=!d.classList.contains('on');
+      if(turningOn){
+        const conflictWith=[...grid.querySelectorAll('.obj-card.on')].map(e=>e.dataset.key).filter(ck=>CONFLICTS[k].includes(ck));
+        if(conflictWith.length){
+          toast(`「${o.name}」与「${conflictWith.map(ck=>OBJDEF[ck].name).join('、')}」相互矛盾，不能同时选择（经济性目标与性能目标互斥）。`);
+          return;
+        }
+      }
+      d.classList.toggle('on');
+    });
+    grid.appendChild(d);
+  });
+  // 地区联动
+  const region=$('in-region');
+  const regionMap={华北:[-10,4],东北:[-25,5],华东:[0,3],华南:[5,2],西北:[-20,5]};
+  region.addEventListener('change',()=>{ const r=regionMap[region.value]; $('in-twinter').value=r[0]; $('in-vwind').value=r[1]; });
+  // 空重比例联动（设计输入 ↔ 车流分析滑块，空+重=100）
+  const syncEmpty=()=>{ const v=parseInt($('in-empty').value)||0; $('in-heavy').value=100-v; $('traffic-empty').value=v; $('traffic-empty-val').textContent=v+'%'; };
+  const syncHeavy=()=>{ const v=parseInt($('in-heavy').value)||0; $('in-empty').value=100-v; $('traffic-empty').value=100-v; $('traffic-empty-val').textContent=(100-v)+'%'; };
+  $('in-empty').addEventListener('input',syncEmpty);
+  $('in-empty').addEventListener('change',syncEmpty);
+  $('in-heavy').addEventListener('input',syncHeavy);
+  $('in-heavy').addEventListener('change',syncHeavy);
+  // 车流滑块：实时更新标签并（防抖）重算溜放结果
+  let trafficTimer=null;
+  $('traffic-empty').addEventListener('input',()=>{
+    $('traffic-empty-val').textContent=$('traffic-empty').value+'%';
+    clearTimeout(trafficTimer);
+    trafficTimer=setTimeout(()=>{ if(!$('btn-run').disabled) refreshTraffic(); },120);
+  });
+  $('btn-traffic-run').addEventListener('click',refreshTraffic);
+  // 设计输入实时联动：任一输入变化即重算初始方案与全部输出（防抖；优化运行中不触发）
+  const designInputIds=['in-lines','in-daily','in-machines','in-region','in-twinter','in-vwind','in-empty','in-heavy','in-peak','in-hmax','in-hmin','in-length','in-segments','in-nfwd','in-ndia','in-nslip','in-ccurve','in-crev','in-cfwd','in-cdia','in-cslip'];
+  let regenTimer=null;
+  const scheduleRegen=()=>{ if($('btn-run').disabled) return; clearTimeout(regenTimer); regenTimer=setTimeout(regenInitial,150); };
+  designInputIds.forEach(id=>{ const el=$(id); if(!el) return; el.addEventListener('input',scheduleRegen); el.addEventListener('change',scheduleRegen); });
+  // 生成初始方案
+  $('btn-init').addEventListener('click',()=>{
+    regenInitial();
+    saveCurrent('初始方案（一键生成）','initial');
+    switchTab('p-profile');
+  });
+  // 优化
+  const run=()=>{
+    const cfg=makeCfg();
+    state.cfg=cfg; state.iterHistory=[]; state.archive=[];
+    if(cfg.objIdx.length<1){ alert('请至少选择一个优化目标'); return; }
+    $('btn-run').disabled=$('btn-run2').disabled=true; $('opt-status').textContent='优化中…'; $('opt-progress').style.width='0%';
+    setTimeout(()=>{
+      (async()=>{
+        try{
+          const t0=performance.now();
+          const algo=$('in-algo').value; const runner=algo==='nsga2'?nsga2:(algo==='alns'?alns:moPSO);
+          const archive=await runner(cfg,(it,arc)=>{
+            state.iterHistory.push(arc.length);
+            $('opt-progress').style.width=(Math.round((it+1)/cfg.iters*100))+'%';
+            $('st-eval').textContent=(it+1)*cfg.popSize;
+            $('st-nd').textContent=arc.length;
+            $('opt-status').textContent=`第 ${it+1}/${cfg.iters} 代 · Pareto 解 ${arc.length} 个`;
+          });
+          state.archive=archive;
+          const el=performance.now()-t0;
+          $('opt-progress').style.width='100%';
+          if(!archive.length){
+            $('opt-status').textContent='未得到 Pareto 解：请增大种群/迭代次数，或放宽峰高/坡度约束';
+          }else{
+            $('opt-status').textContent=`完成（${(el/1000).toFixed(1)}s，Pareto 解 ${archive.length} 个）`;
+            const o1=cfg.objIdx[0], o2=cfg.objIdx.length>1?cfg.objIdx[1]:cfg.objIdx[0];
+            const b1=archive.reduce((a,b)=>OBJDEF[o1].dir==='min'?(b.meta[o1]<a.meta[o1]?b:a):(b.meta[o1]>a.meta[o1]?b:a),archive[0]);
+            $('st-obj1').innerHTML=fmt(b1.meta[o1],o1==='cost'?0:2)+(o1==='cost'?'万':'');
+            if(cfg.objIdx.length>1){ const b2=archive.reduce((a,b)=>OBJDEF[o2].dir==='min'?(b.meta[o2]<a.meta[o2]?b:a):(b.meta[o2]>a.meta[o2]?b:a),archive[0]); $('st-obj2').innerHTML=fmt(b2.meta[o2],2); }
+            renderPareto(); renderConvergence(); renderParetoTable();
+            state.selected=archive[0]; renderProfilePanel(); syncSelected();
+            saveCurrent('优化·'+(algo==='nsga2'?'NSGA-II':(algo==='alns'?'ALNS':'MOPSO')), algo);
+          }
+          $('btn-run').disabled=$('btn-run2').disabled=false;
+          switchTab('p-optimize');
+          window.dispatchEvent(new Event('resize'));
+        }catch(e){
+          console.error(e);
+          $('opt-status').textContent='优化出错：'+(e&&e.message?e.message:String(e));
+          $('btn-run').disabled=$('btn-run2').disabled=false;
+          $('opt-progress').style.width='0%';
+        }
+      })();
+    },30);
+  };
+  $('btn-run').addEventListener('click',run);
+  $('btn-run2').addEventListener('click',run);
+  $('btn-stop').addEventListener('click',()=>{ STOP=true; $('btn-run').disabled=$('btn-run2').disabled=false; $('opt-status').textContent='已停止'; });
+  // 方案切换：重算该方案的纵断面图、统计卡、坡段表与检算报告
+  $('profile-select').addEventListener('change',()=>{
+    renderProfilePanel();   // 更新纵断面图 + 统计卡 + 坡段表 + 来源，并保留当前选中方案
+    syncSelected();         // 同步检算报告（速度曲线、检算、能力、建议）
+    renderParetoTable();
+  });
+  // 结果存档
+  $('btn-save-current').addEventListener('click',()=>{ saveCurrent('手动保存方案','manual'); toast('已保存当前方案'); });
+  $('btn-export-history').addEventListener('click',exportHistory);
+  $('btn-import-history').addEventListener('click',()=>$('file-import').click());
+  $('file-import').addEventListener('change',e=>{ if(e.target.files.length) importHistoryFile(e.target.files[0]); e.target.value=''; });
+  $('btn-clear-history').addEventListener('click',clearHistory);
+}
+/* 切到某标签页时按真实容器宽度重绘对应图表 */
+function refreshVisibleCharts(panelId){
+  if(!state.cfg) return;
+  if(panelId==='p-optimize'){ if(state.archive.length){ renderPareto(); renderConvergence(); } }
+  else if(panelId==='p-profile'){ if(state.selected) renderProfileDetail(state.selected, state.cfg); }
+  else if(panelId==='p-plan'){ if(state.selected) renderPlan(state.selected, state.cfg); }
+  else if(panelId==='p-traffic'){ refreshTraffic(); }
+  else if(panelId==='p-check'){ if(state.selected){ renderSpeedChart(state.selected.meta,state.cfg); renderCheckList(state.selected.meta,state.cfg); renderCapacity(state.selected.meta,state.cfg); renderAdvice(state.selected.meta,state.cfg); } }
+  else if(panelId==='p-history'){ renderHistory(); }
+}
+function switchTab(id){ document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.panel===id)); document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id)); refreshVisibleCharts(id); }
+
+/* ---------- 结果存档（本地持久化 + 载入/删除/导出导入） ---------- */
+const HIST_KEY='hump_history_v1';
+let memHistory=null;
+function loadHistory(){ try{ const s=localStorage.getItem(HIST_KEY); const a=s?JSON.parse(s):[]; memHistory=a; return a; }catch(e){ return memHistory||[]; } }
+function persistHistory(arr){ memHistory=arr; try{ localStorage.setItem(HIST_KEY, JSON.stringify(arr)); }catch(e){ /* 无本地存储权限时仅会话内保留 */ } }
+
+function saveCurrent(label, algo){
+  if(!state.cfg || !state.selected) return;
+  const s=state.selected, cfg=state.cfg;
+  const entry={
+    id: String(Date.now())+'_'+Math.floor(Math.random()*1e6),
+    time: new Date().toLocaleString('zh-CN'),
+    label: label, algo: algo||'initial',
+    N: cfg.N,
+    summary:{
+      H:s.prof[0].h, cost:s.meta.cost, capacity:s.meta.capacity, coupling:s.meta.coupling,
+      winterRel:s.meta.winterRel, equipment:s.meta.equipment, vEndHard:s.meta.vEndHard,
+      vMaxEasy:s.meta.vMaxEasy, nSec:s.meta.nSec, D:s.meta.D, pen:s.pen
+    },
+    x: (s.x?s.x:defaultVec(cfg)).slice(),
+    inputs:{
+      lines:$('in-lines').value, daily:$('in-daily').value, region:$('in-region').value,
+      tWinter:$('in-twinter').value, vWind:$('in-vwind').value, empty:$('in-empty').value,
+      segments:$('in-segments').value, length:$('in-length').value,
+      hmin:$('in-hmin').value, hmax:$('in-hmax').value,
+      obj: cfg.objIdx.map(o=>OBJDEF[o].name)
+    }
+  };
+  const arr=loadHistory(); arr.unshift(entry); if(arr.length>200) arr.length=200;
+  persistHistory(arr); renderHistory(); return entry;
+}
+function deleteHistory(id){ persistHistory(loadHistory().filter(e=>e.id!==id)); renderHistory(); }
+function clearHistory(){ if(!confirm('确定清空全部保存结果？此操作不可撤销。')) return; persistHistory([]); renderHistory(); }
+
+function renderHistory(){
+  const box=$('history-list'); if(!box) return;
+  const arr=loadHistory();
+  const f=(v,d)=> (v==null||isNaN(v)) ? '—' : fmt(v,d);
+  if(!arr.length){ box.innerHTML='<div class="empty">暂无保存结果——点击「生成初始方案」或运行「多目标优化」后会自动保存到这里。</div>'; return; }
+  box.innerHTML=arr.map(e=>{
+    const s=e.summary||{}, bad=(s.pen||0)>0.01;
+    const objTxt=(e.inputs&&e.inputs.obj&&e.inputs.obj.length)?esc(e.inputs.obj.join(' / ')):'';
+    return `<div class="hist-item">
+      <div class="hist-head"><span class="hist-label">${esc(e.label||'方案')}</span>${bad?'<span class="badge-row badge bad">违规</span>':'<span class="badge-row badge ok">可行</span>'}<span class="hist-time">${esc(e.time||'')}</span></div>
+      <div class="hist-metrics">峰高 <b>${f(s.H,2)}</b> m · 成本 <b>${f(s.cost,0)}</b> 万元 · 推峰 <b>${f(s.capacity,2)}</b> m/s · 冬季末速 <b>${f(s.vEndHard,2)}</b> m/s${objTxt?'<span style="opacity:.75"> · 目标：'+objTxt+'</span>':''}</div>
+      <div class="hist-ops"><button class="btn ghost sm" data-load="${e.id}">载入</button><button class="btn danger sm" data-del="${e.id}">删除</button></div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('[data-load]').forEach(b=>b.addEventListener('click',()=>loadHistoryEntry(b.dataset.load)));
+  box.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>deleteHistory(b.dataset.del)));
+}
+
+function loadHistoryEntry(id){
+  const e=loadHistory().find(x=>x.id===id);
+  if(!e){ toast('未找到该记录'); return; }
+  if(!e.x || !Array.isArray(e.x)){ toast('该记录缺少方案数据，无法载入'); return; }
+  if(e.N!=null && e.N!==state.cfg.N){ toast('该方案按 '+e.N+' 段坡保存，当前为 '+state.cfg.N+' 段，坡段数不一致，请改回相同坡段数后再载入'); return; }
+  const r=evaluate(e.x, state.cfg);
+  const entry={ x:e.x.slice(), obj:r.obj, prof:r.prof, segs:r.segs, grades:r.grades, meta:r.meta, viol:r.violations, pen:r.penalty, label:e.label };
+  let idx=state.archive.findIndex(a=>a.x && JSON.stringify(a.x)===JSON.stringify(e.x));
+  if(idx<0){ state.archive.push(entry); idx=state.archive.length-1; } else { state.archive[idx]=entry; }
+  state.selected=entry;
+  $('profile-select').value = String(idx);
+  renderProfilePanel(); syncSelected(); renderParetoTable();
+  switchTab('p-profile');
+  toast('已载入：'+e.label+'（已按当前设计输入重新检算）');
+}
+
+function exportHistory(){
+  const arr=loadHistory();
+  if(!arr.length){ toast('暂无结果可导出'); return; }
+  const blob=new Blob([JSON.stringify(arr,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='驼峰优化结果存档.json'; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast('已导出 '+arr.length+' 条结果');
+}
+function importHistoryFile(file){
+  const r=new FileReader();
+  r.onload=()=>{ try{ const data=JSON.parse(r.result); if(!Array.isArray(data)) throw new Error('bad'); const merged=data.concat(loadHistory()); persistHistory(merged.slice(0,200)); renderHistory(); toast('已导入 '+data.length+' 条结果'); }catch(err){ toast('导入失败：文件格式不正确'); } };
+  r.readAsText(file);
+}
+
+/* ---------- 初始化 ---------- */
+window.addEventListener('DOMContentLoaded',()=>{
+  bindEvents();
+  renderVehicles();
+  regenInitial();
+  renderHistory();
+});
+</script>
+
+<script>
+/* ---------- 封面页 & 源代码查看 ---------- */
+(function(){
+  var cover=document.getElementById('cover');
+  var modal=document.getElementById('src-modal');
+  var code=document.getElementById('src-code');
+  var info=document.getElementById('src-info');
+  var copyBtn=document.getElementById('btn-copy');
+
+  function openSrc(){
+    var html=document.documentElement.outerHTML;
+    code.textContent=html;
+    info.textContent='共 '+html.length.toLocaleString('zh-CN')+' 字符 · '+html.split('\n').length+' 行';
+    modal.classList.add('show');
+    document.body.style.overflow='hidden';
+  }
+  function closeSrc(){
+    modal.classList.remove('show');
+    document.body.style.overflow='';
+  }
+  function fallbackCopy(t){
+    var ta=document.createElement('textarea');
+    ta.value=t; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); copyBtn.textContent='已复制'; }catch(e){ copyBtn.textContent='复制失败'; }
+    document.body.removeChild(ta);
+    setTimeout(function(){ copyBtn.textContent='复制全部'; },1500);
+  }
+
+  document.getElementById('btn-enter').addEventListener('click',function(){
+    cover.classList.add('hidden');
+    window.scrollTo(0,0);
+  });
+  document.getElementById('btn-src').addEventListener('click',openSrc);
+  var hdr=document.getElementById('btn-src-header');
+  if(hdr) hdr.addEventListener('click',openSrc);
+  document.getElementById('btn-close-src').addEventListener('click',closeSrc);
+  modal.addEventListener('click',function(e){ if(e.target===modal) closeSrc(); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeSrc(); });
+
+  copyBtn.addEventListener('click',function(){
+    var html=code.textContent||document.documentElement.outerHTML;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(html).then(function(){
+        copyBtn.textContent='已复制';
+        setTimeout(function(){ copyBtn.textContent='复制全部'; },1500);
+      }).catch(function(){ fallbackCopy(html); });
+    } else { fallbackCopy(html); }
+  });
+})();
+</script>
+</body>
+</html>
