@@ -1411,6 +1411,7 @@ function clearAnim(){
     if(anim.readout && anim.readout.parentNode) anim.readout.parentNode.removeChild(anim.readout);
     anim=null;
   }
+  const pb=$('btn-play-anim'); if(pb){ pb.textContent='▶ 播放溜放动画'; pb.disabled=false; }
 }
 function playAnim(){
   if(!lastProfileChart){ toast('请先生成或选择方案'); return; }
@@ -1419,6 +1420,7 @@ function playAnim(){
   clearAnim();
   const hardPts = simulate(prof, VEHICLES.hard, cfg.wWinter, 1.4);
   const easyPts = simulate(prof, VEHICLES.easy, cfg.wSummer, 1.9);
+  if(!hardPts.length || !easyPts.length){ toast('无法计算溜放轨迹，请先生成方案'); return; }
   const n = Math.max(hardPts.length, easyPts.length);
   const overlay = c.g();
   overlay.setAttribute('pointer-events','none');
@@ -1426,13 +1428,18 @@ function playAnim(){
   const readout = document.createElement('div');
   readout.className='anim-readout';
   box.appendChild(readout);
+  const pb=$('btn-play-anim'); if(pb){ pb.textContent='▶ 播放中…'; pb.disabled=true; }
   const dur = 7000, t0 = performance.now();
   const carRow = (name,color,p)=>`<div class="car"><span class="dot" style="background:${color}"></span><span class="n">${name}</span><span class="v">${fmt(p.v,2)}</span><span class="k">m/s</span></div>`;
+  const trail=[];
   function drawCar(p, color){
     const px=c.x(p.x,xmin,xmax), py=c.y(p.h,ymin,ymax);
-    c.el('circle',{cx:px,cy:py,r:11,fill:color,'fill-opacity':0.22},overlay);
-    c.el('circle',{cx:px,cy:py,r:6.5,fill:color,stroke:'#fff','stroke-width':2},overlay);
-    c.el('line',{x1:px,x2:px,y1:py,y2:c.y(0,ymin,ymax),stroke:color,'stroke-width':1,'stroke-dasharray':'3 3'},overlay);
+    // 外圈光晕 + 实心车点（加大，更醒目）
+    c.el('circle',{cx:px,cy:py,r:15,fill:color,'fill-opacity':0.20},overlay);
+    c.el('circle',{cx:px,cy:py,r:8.5,fill:color,stroke:'#fff','stroke-width':2.4},overlay);
+    c.el('line',{x1:px,x2:px,y1:py,y2:c.y(0,ymin,ymax),stroke:color,'stroke-width':1.2,'stroke-dasharray':'3 3','stroke-opacity':0.85},overlay);
+    trail.push({px,py,color});
+    if(trail.length>28) trail.shift();
   }
   function frame(now){
     if(!anim) return;
@@ -1443,6 +1450,8 @@ function playAnim(){
     const hp=hardPts[Math.min(idx, hardPts.length-1)];
     const ep=easyPts[Math.min(idx, easyPts.length-1)];
     drawCar(hp,'#2563eb'); drawCar(ep,'#dc2626');
+    // 拖尾轨迹（增强运动可见性）
+    for(let i=0;i<trail.length;i++){ const tr=trail[i]; c.el('circle',{cx:tr.px,cy:tr.py,r:3.2,fill:tr.color,'fill-opacity':(i/trail.length)*0.55},overlay); }
     readout.innerHTML = `<div class="title">溜放仿真（循环播放）</div>`
       + carRow('难行车·冬季','#2563eb',hp)
       + carRow('易行车·夏季','#dc2626',ep)
