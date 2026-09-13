@@ -226,6 +226,35 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
 .modal-foot{display:flex;align-items:center;gap:10px;padding:12px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--text-2);flex:none}
 .modal-foot .spacer{flex:1}
 @media(max-width:640px){.cover h1{font-size:26px}.cover-inner{padding:36px 14px}.cover-desc{font-size:13px}.cover-btn{height:44px;padding:0 22px;font-size:14.5px}}
+
+/* ===== 人机交互增强（悬停读数 / 滑块 / 溜放动画 / 拖拽调坡） ===== */
+.chart-box{position:relative}
+.chart-hint{margin-top:8px;font-size:12px;color:var(--text-3);line-height:1.55}
+.chart-hint b{color:var(--primary-600);font-weight:600}
+/* 参数滑块 */
+.range-row{display:flex;align-items:center;gap:10px;height:36px}
+.range-row .inp-range{flex:1;height:36px;margin:0;accent-color:var(--primary);cursor:pointer;background:transparent}
+.range-val{min-width:54px;text-align:right;font-weight:700;font-size:13px;color:var(--primary-600);font-variant-numeric:tabular-nums}
+/* 悬停读数提示（HTML 浮层，供平面展开图 / 动画用） */
+.hover-tip{position:fixed;z-index:3000;pointer-events:none;background:rgba(17,24,39,.95);color:#fff;padding:8px 11px;border-radius:8px;font-size:12px;line-height:1.6;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:280px;display:none;white-space:nowrap}
+.hover-tip b{color:#93c5fd}
+.hover-tip .k{opacity:.72}
+/* 溜放动画 */
+.anim-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.anim-readout{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.97);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:12px;line-height:1.65;box-shadow:0 4px 16px rgba(0,0,0,.14);min-width:184px;pointer-events:none;z-index:5}
+.anim-readout .title{font-weight:700;color:var(--text);font-size:12.5px}
+.anim-readout .car{display:flex;align-items:center;gap:7px;margin-top:3px}
+.anim-readout .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.anim-readout .n{font-weight:600;color:var(--text);margin-right:auto}
+.anim-readout .v{font-variant-numeric:tabular-nums;font-weight:700;color:var(--text)}
+.anim-readout .k{color:var(--text-2)}
+/* 拖拽调坡 */
+.drag-knob{cursor:ns-resize}
+.drag-knob:hover{filter:brightness(1.15)}
+.drag-knob.peak{cursor:ns-resize}
+.drag-readout{position:absolute;left:10px;top:10px;background:rgba(255,255,255,.97);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:11.5px;line-height:1.6;box-shadow:0 4px 16px rgba(0,0,0,.14);pointer-events:none;z-index:5;max-width:240px}
+.drag-readout .ok{color:var(--success)}
+.drag-readout .bad{color:var(--danger)}
 </style>
 </head>
 <body>
@@ -353,11 +382,11 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
           </div>
           <div class="field">
             <label>冬季计算气温 <span class="unit">℃</span></label>
-            <input class="inp" id="in-twinter" type="number" value="-10" step="1">
+            <div class="range-row"><input class="inp inp-range" id="in-twinter" type="range" value="-10" min="-40" max="10" step="1" data-unit=" ℃"><span class="range-val">-10 ℃</span></div>
           </div>
           <div class="field">
             <label>冬季计算风速 <span class="unit">m/s</span></label>
-            <input class="inp" id="in-vwind" type="number" value="4" min="0" max="5" step="0.5">
+            <div class="range-row"><input class="inp inp-range" id="in-vwind" type="range" value="4" min="0" max="5" step="0.5" data-unit=" m/s"><span class="range-val">4 m/s</span></div>
           </div>
         </div>
         <div class="hint">夏季统一取 27℃、0 m/s（溜车有利条件，控制限速）。冬季取保证率 95% 低温大风。</div>
@@ -391,15 +420,15 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
         <div class="row">
           <div class="field">
             <label>最大峰高限制 <span class="unit">m</span></label>
-            <input class="inp" id="in-hmax" type="number" value="4.5" min="3" max="6" step="0.1">
+            <div class="range-row"><input class="inp inp-range" id="in-hmax" type="range" value="4.5" min="3" max="6" step="0.1" data-unit=" m"><span class="range-val">4.5 m</span></div>
           </div>
           <div class="field">
             <label>最小峰高 <span class="unit">m</span></label>
-            <input class="inp" id="in-hmin" type="number" value="3.0" min="2" max="5" step="0.1">
+            <div class="range-row"><input class="inp inp-range" id="in-hmin" type="range" value="3.0" min="2" max="5" step="0.1" data-unit=" m"><span class="range-val">3.0 m</span></div>
           </div>
           <div class="field">
             <label>溜放部分总长 <span class="unit">m</span></label>
-            <input class="inp" id="in-length" type="number" value="380" min="250" max="600" step="10">
+            <div class="range-row"><input class="inp inp-range" id="in-length" type="range" value="380" min="250" max="600" step="10" data-unit=" m"><span class="range-val">380 m</span></div>
           </div>
         </div>
         <div class="hint">我国驼峰峰高一般 3.0～4.0 m，北方寒冷地区比南方高 0.5～1.0 m。</div>
@@ -557,8 +586,14 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
     <div class="grid cols-2 mt">
       <div class="card">
         <h3><span class="dot"></span>纵断面图（前陡后缓凹形）</h3>
-        <div class="sub">高程—里程；红点为变坡点，标注坡段坡度</div>
+        <div class="sub">高程—里程；红点为变坡点。<b>可直接拖动红点调坡</b>（峰顶点调峰高、中间点调坡段），松开后自动重新检算</div>
+        <div class="anim-toolbar">
+          <button class="btn ghost sm" id="btn-play-anim">▶ 播放溜放动画</button>
+          <button class="btn sm" id="btn-stop-anim">■ 停止</button>
+          <span class="muted" style="font-size:12px">难行车（蓝）/ 易行车（红）沿纵断面重力溜放</span>
+        </div>
         <div class="chart-box" id="chart-profile"></div>
+        <div class="chart-hint">悬停图表可查看该里程处的高程 / 坡度，并与下方「能高线」里程联动。</div>
       </div>
       <div class="card">
         <h3><span class="dot"></span>坡段参数表</h3>
@@ -919,8 +954,8 @@ function decode(p, cfg){
 }
 
 /* ---------- 评价函数：目标 + 约束（罚函数） ---------- */
-function evaluate(p, cfg){
-  const prof=decode(p,cfg);
+function evaluate(p, cfg){ return evaluateProf(decode(p,cfg), cfg); }
+function evaluateProf(prof, cfg){
   const segs=segmentsOf(prof);
   const N=cfg.N;
   const violations=[];
@@ -1276,10 +1311,226 @@ function makeChart(containerId,{ml=46,mr=16,mt=16,mb=34}={}){
       const t=document.createElementNS(SVGNS,'text'); t.setAttribute('x',x);t.setAttribute('y',y);t.setAttribute('text-anchor',anchor);t.setAttribute('fill',color);t.setAttribute('font-size',size);t.setAttribute('font-weight',weight);t.textContent=str; svg.appendChild(t); return t;
     },
     rect(x,y,w,h,color){ const r=document.createElementNS(SVGNS,'rect'); r.setAttribute('x',x);r.setAttribute('y',y);r.setAttribute('width',w);r.setAttribute('height',h);r.setAttribute('fill',color); svg.appendChild(r); return r; },
+    get svg(){ return svg; },
+    get el(){ return c; },
+    invX(px,xmin,xmax){ return xmin + (px-ml)/(W-ml-mr)*(xmax-xmin); },
+    invY(py,ymin,ymax){ return ymin + (H-mb-py)/(H-mt-mb)*(ymax-ymin); },
+    g(){ const g=document.createElementNS(SVGNS,'g'); svg.appendChild(g); return g; },
+    el(tag,attrs,parent){ const e=document.createElementNS(SVGNS,tag); for(const k in attrs){ const v=attrs[k]; if(v!=null&&v!==undefined) e.setAttribute(k,v); } (parent||svg).appendChild(e); return e; },
     clear(){ while(svg.firstChild) svg.removeChild(svg.firstChild); }
   };
   window.addEventListener('resize',()=>{ size(); });
   return api;
+}
+
+/* =====================================================================
+ *  人机交互增强：悬停读数 / 溜放动画 / 拖拽调坡 / 参数滑块
+ * ===================================================================== */
+const HOVERS={};
+let dragging=false, lastProfileChart=null, anim=null;
+
+/* ---------- 悬停读数 + 跨图联动 ---------- */
+function svgPoint(c, e){
+  const r=c.svg.getBoundingClientRect();
+  return { px:(e.clientX-r.left)/r.width*c.W, py:(e.clientY-r.top)/r.height*c.H };
+}
+function txtW(s){ let w=0; for(let i=0;i<s.length;i++){ const ch=s.charCodeAt(i); w += (ch>=0x2e80 && ch<=0x9fff) ? 12 : 6.8; } return w; }
+function drawTip(c, layer, sx, title, rows){
+  const pad=8, lh=15, dot=13;
+  let w=txtW(title||'');
+  rows.forEach(r=>{ w=Math.max(w, txtW(r.name)+dot+txtW(r.val)); });
+  w=Math.max(60, w+pad*2);
+  const h=pad*2 + (title?lh:0) + rows.length*lh;
+  const right = sx+12+w > c.W-4;
+  const tx=right?sx-12-w:sx+12;
+  const ty=6;
+  c.el('rect',{x:tx,y:ty,width:w,height:h,rx:7,fill:'rgba(17,24,39,0.95)'},layer);
+  let yy=ty+pad+11;
+  if(title){ const t=c.el('text',{x:tx+pad,y:yy,'font-size':11,fill:'#93c5fd','font-weight':700},layer); t.textContent=title; yy+=lh; }
+  rows.forEach(r=>{
+    c.el('rect',{x:tx+pad,y:yy-7,width:8,height:8,rx:2,fill:r.color||'#fff'},layer);
+    const t=c.el('text',{x:tx+pad+dot,y:yy,'font-size':11,fill:'#fff'},layer); t.textContent=r.name+'  '+r.val;
+    yy+=lh;
+  });
+}
+function addLineHover(c, containerId, xmin, xmax, ymin, ymax, series, opts){
+  opts=opts||{};
+  const svg=c.svg;
+  const layer=c.g();
+  layer.setAttribute('pointer-events','none');
+  function clear(){ while(layer.firstChild) layer.removeChild(layer.firstChild); }
+  function show(x){
+    clear();
+    if(x<xmin||x>xmax) return;
+    const sx=c.x(x,xmin,xmax);
+    c.el('line',{x1:sx,x2:sx,y1:c.y(ymin,ymin,ymax),y2:c.y(ymax,ymin,ymax),stroke:'#94a3b8','stroke-width':1,'stroke-dasharray':'4 3'},layer);
+    const rows=[];
+    series.forEach(sr=>{
+      const pts=sr.pts; if(!pts||!pts.length) return;
+      let lo=0, hi=pts.length-1;
+      while(hi-lo>1){ const m=(lo+hi)>>1; if(pts[m][0]<x) lo=m; else hi=m; }
+      const i=(Math.abs(pts[lo][0]-x)<=Math.abs(pts[hi][0]-x))?lo:hi;
+      const p=pts[i];
+      c.el('circle',{cx:sx,cy:c.y(p[1],ymin,ymax),r:3.6,fill:sr.color,stroke:'#fff','stroke-width':1.4},layer);
+      rows.push({name:sr.name, color:sr.color, val:sr.fmt?sr.fmt(p[1],p[0]):fmt(p[1],1)});
+    });
+    if(opts.extra){ const ex=opts.extra(x); if(ex&&ex.length) rows.push(...ex); }
+    drawTip(c, layer, sx, (opts.xFmt||(v=>fmt(v,0)))(x), rows);
+  }
+  svg.addEventListener('mousemove', e=>{
+    if(dragging) return;
+    const {px}=svgPoint(c,e);
+    const x=c.invX(px,xmin,xmax);
+    show(x);
+    if(opts.link && HOVERS[opts.link] && HOVERS[opts.link].show) HOVERS[opts.link].show(x);
+  });
+  svg.addEventListener('mouseleave', ()=>{
+    clear();
+    if(opts.link && HOVERS[opts.link] && HOVERS[opts.link].hide) HOVERS[opts.link].hide();
+  });
+  HOVERS[containerId]={show, hide:clear};
+}
+
+/* ---------- 参数滑块（实时联动） ---------- */
+function updateRangeLabel(inp){
+  const val=inp.parentElement.querySelector('.range-val');
+  if(val) val.textContent = inp.value + (inp.dataset.unit||'');
+}
+function bindRanges(){
+  document.querySelectorAll('input.inp-range').forEach(inp=>{
+    inp.addEventListener('input',()=>updateRangeLabel(inp));
+    updateRangeLabel(inp);
+  });
+}
+
+/* ---------- 溜放动画（难行车/易行车沿纵断面重力溜放） ---------- */
+function clearAnim(){
+  if(anim){
+    if(anim.raf) cancelAnimationFrame(anim.raf);
+    if(anim.overlay && anim.overlay.parentNode) anim.overlay.parentNode.removeChild(anim.overlay);
+    if(anim.readout && anim.readout.parentNode) anim.readout.parentNode.removeChild(anim.readout);
+    anim=null;
+  }
+}
+function playAnim(){
+  if(!lastProfileChart){ toast('请先生成或选择方案'); return; }
+  const {c, prof, xmin, xmax, ymin, ymax} = lastProfileChart;
+  const cfg = state.cfg || makeCfg();
+  clearAnim();
+  const hardPts = simulate(prof, VEHICLES.hard, cfg.wWinter, 1.4);
+  const easyPts = simulate(prof, VEHICLES.easy, cfg.wSummer, 1.9);
+  const n = Math.max(hardPts.length, easyPts.length);
+  const overlay = c.g();
+  overlay.setAttribute('pointer-events','none');
+  const box = $('chart-profile');
+  const readout = document.createElement('div');
+  readout.className='anim-readout';
+  box.appendChild(readout);
+  const dur = 7000, t0 = performance.now();
+  const carRow = (name,color,p)=>`<div class="car"><span class="dot" style="background:${color}"></span><span class="n">${name}</span><span class="v">${fmt(p.v,2)}</span><span class="k">m/s</span></div>`;
+  function drawCar(p, color){
+    const px=c.x(p.x,xmin,xmax), py=c.y(p.h,ymin,ymax);
+    c.el('circle',{cx:px,cy:py,r:11,fill:color,'fill-opacity':0.22},overlay);
+    c.el('circle',{cx:px,cy:py,r:6.5,fill:color,stroke:'#fff','stroke-width':2},overlay);
+    c.el('line',{x1:px,x2:px,y1:py,y2:c.y(0,ymin,ymax),stroke:color,'stroke-width':1,'stroke-dasharray':'3 3'},overlay);
+  }
+  function frame(now){
+    if(!anim) return;
+    const t=(now-t0)/1000;
+    const frac=(t*1000 % dur)/dur;
+    const idx=Math.floor(frac*n);
+    while(overlay.firstChild) overlay.removeChild(overlay.firstChild);
+    const hp=hardPts[Math.min(idx, hardPts.length-1)];
+    const ep=easyPts[Math.min(idx, easyPts.length-1)];
+    drawCar(hp,'#2563eb'); drawCar(ep,'#dc2626');
+    readout.innerHTML = `<div class="title">溜放仿真（循环播放）</div>`
+      + carRow('难行车·冬季','#2563eb',hp)
+      + carRow('易行车·夏季','#dc2626',ep)
+      + `<div class="car" style="margin-top:4px"><span class="k">里程</span><span class="n" style="text-align:right">${fmt(hp.x,1)} m</span></div>`
+      + `<div class="car"><span class="k">峰高</span><span class="n" style="text-align:right">${fmt(prof[0].h,2)} m</span></div>`;
+    anim.raf = requestAnimationFrame(frame);
+  }
+  anim = {raf:null, overlay, readout};
+  anim.raf = requestAnimationFrame(frame);
+}
+
+/* ---------- 拖拽调坡 ---------- */
+function encodeProf(prof, cfg){
+  const H=prof[0].h, L=cfg.L, nb=cfg.N-1;
+  const v=[H];
+  for(let k=1;k<=nb;k++) v.push(prof[k].x/L);
+  for(let k=1;k<=nb;k++) v.push(prof[k].h/H);
+  return v;
+}
+function applyDrag(prof){
+  const cfg=state.cfg;
+  const r=evaluateProf(prof, cfg);
+  state.selected = Object.assign({}, state.selected, {x:encodeProf(prof,cfg), obj:r.obj, prof:r.prof, segs:r.segs, grades:r.grades, meta:r.meta, viol:r.violations, pen:r.penalty});
+  renderProfileDetail(state.selected, cfg);
+  syncSelected();
+  renderParetoTable();
+  toast('已按拖拽后的纵断面重新检算');
+}
+function attachDragPoints(c, prof, cfg, xmin, xmax, ymin, ymax){
+  const last=prof.length-1;
+  prof.forEach((p,i)=>{
+    const isPeak=(i===0), isEnd=(i===last);
+    const cc=c.el('circle',{cx:c.x(p.x,xmin,xmax), cy:c.y(p.h,ymin,ymax), r:isPeak?5:4, fill:'#dc2626', stroke:'#fff','stroke-width':1.4});
+    if(isEnd){ cc.setAttribute('pointer-events','none'); return; }
+    cc.setAttribute('class','drag-knob');
+    cc.style.cursor='ns-resize';
+    cc.addEventListener('mousedown', e=>startPointDrag(e, i, c, prof, cfg, xmin, xmax, ymin, ymax, isPeak));
+  });
+}
+function startPointDrag(e, i, c, prof, cfg, xmin, xmax, ymin, ymax, isPeak){
+  e.preventDefault(); e.stopPropagation();
+  dragging=true; clearAnim();
+  const dragProf=prof.map(p=>({x:p.x,h:p.h}));
+  const box=$('chart-profile');
+  const readout=document.createElement('div'); readout.className='drag-readout';
+  box.appendChild(readout);
+  function showReadout(){
+    const segs=segmentsOf(dragProf);
+    const hard=simulate(dragProf, VEHICLES.hard, cfg.wWinter, 1.4);
+    const easy=simulate(dragProf, VEHICLES.easy, cfg.wSummer, 1.9);
+    const vEnd=endSpeed(hard), vMax=maxSpeed(easy);
+    const wOk=vEnd>=1.4, sOk=vMax<=7.0;
+    const g=segs[i]?segs[i].grade:0;
+    readout.innerHTML = `<div style="font-weight:700;color:var(--text)">拖动调整纵断面</div>`
+      + `<div>峰高 H <b>${fmt(dragProf[0].h,2)}</b> m</div>`
+      + `<div>当前坡段坡度 <b>${fmt(g,1)}</b>‰</div>`
+      + `<div class="${wOk?'ok':'bad'}">难行车末速 ${fmt(vEnd,2)} m/s ${wOk?'✓':'✗ 溜不到位'}</div>`
+      + `<div class="${sOk?'ok':'bad'}">易行车最大速度 ${fmt(vMax,2)} m/s ${sOk?'✓':'✗ 超速'}</div>`
+      + `<div style="color:var(--text-3);font-size:11px">松开鼠标自动重新检算</div>`;
+  }
+  function move(ev){
+    const H=dragProf[0].h;
+    const xmn=-cfg.L*0.04, xmx=cfg.L*1.04, ymn=-H*0.12, ymx=H*1.25;
+    const c2=(lastProfileChart&&lastProfileChart.c)||c;
+    const {px,py}=svgPoint(c2, ev);
+    const nx=c2.invX(px,xmn,xmx);
+    const nh=c2.invY(py,ymn,ymx);
+    if(isPeak){
+      dragProf[0].h=clamp(nh, 0.3, 8.0);
+    }else{
+      const xLo=dragProf[i-1].x+2, xHi=dragProf[i+1].x-2;
+      dragProf[i].x=clamp(nx, xLo, Math.max(xLo, xHi));
+      dragProf[i].h=clamp(nh, 0, Math.max(H*1.2, 0.5));
+    }
+    renderProfileChart(dragProf, cfg);
+    if(!readout.parentNode) box.appendChild(readout);
+    showReadout();
+  }
+  function up(){
+    dragging=false;
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+    if(readout.parentNode) readout.parentNode.removeChild(readout);
+    applyDrag(dragProf);
+  }
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+  showReadout();
 }
 
 /* =====================================================================
@@ -1324,9 +1575,13 @@ function renderConvergence(){
   c.line(hist.map((v,i)=>[i,v]),0,xmax,0,ymax,'#2563eb',2);
   c.text(c.W/2,13,'迭代次数',{color:'#6b7280',size:11});
   c.text(12,c.H/2,'Pareto 解数量',{color:'#6b7280',size:11,anchor:'middle'});
+  addLineHover(c,'chart-conv',0,xmax,0,ymax,
+    [{name:'Pareto 解数量',color:'#2563eb',pts:hist.map((v,i)=>[i,v]),fmt:v=>fmt(v,0)+' 个'}],
+    {xFmt:v=>'迭代 '+v});
 }
 
 function renderProfileChart(prof,cfg){
+  clearAnim();
   const c=makeChart('chart-profile');
   const L=cfg.L, H=prof[0].h;
   const xmax=L*1.04, xmin=-L*0.04;
@@ -1340,11 +1595,18 @@ function renderProfileChart(prof,cfg){
   // 峰高标注
   c.line([[0,0],[0,H]],xmin,xmax,ymin,ymax,'#dc2626',1.2,'4 3');
   c.text(c.x(0,xmin,xmax)-8, c.y(H/2,ymin,ymax), `峰高 H=${fmt(H,2)}m`, {color:'#dc2626',size:11,anchor:'end'});
-  // 变坡点 + 坡度标注
+  // 变坡点（红点可拖拽调坡：峰顶点调峰高，中间点调坡段位置/高程）
+  attachDragPoints(c, prof, cfg, xmin, xmax, ymin, ymax);
+  // 坡度标注
   const segs=segmentsOf(prof);
-  prof.forEach(p=>{ c.scatter([[p.x,p.h]],xmin,xmax,ymin,ymax,'#dc2626',3.5); });
   segs.forEach((s,i)=>{ const mx=(s.x0+s.x1)/2, mh=(s.h0+s.h1)/2; c.text(c.x(mx,xmin,xmax), c.y(mh,ymin,ymax)-6, `${fmt(s.grade,1)}‰`, {color:'#1d4ed8',size:10}); });
-  c.text(c.W/2,13,'纵断面（高程—里程，前陡后缓凹形）',{color:'#6b7280',size:11});
+  c.text(c.W/2,13,'纵断面（高程—里程，前陡后缓凹形 · 红点可拖拽调坡）',{color:'#6b7280',size:11});
+  // 悬停读数 + 与能高线里程联动
+  addLineHover(c,'chart-profile',xmin,xmax,ymin,ymax,
+    [{name:'高程',color:'#1d4ed8',pts:prof.map(p=>[p.x,p.h]),fmt:v=>fmt(v,2)+' m'}],
+    {xFmt:v=>'里程 '+fmt(v,0)+' m', link:'chart-energy',
+     extra:x=>{ const sg=segmentsOf(prof).find(s=>x>=s.x0&&x<=s.x1); return sg?[{name:'坡度',color:'#f59e0b',val:fmt(sg.grade,1)+'‰'}]:[]; }});
+  lastProfileChart={c, prof, cfg, xmin, xmax, ymin, ymax};
 }
 
 function renderSpeedChart(meta,cfg){
@@ -1362,6 +1624,10 @@ function renderSpeedChart(meta,cfg){
   c.line([[0,1.4],[L,1.4]],xmin,xmax,0,ymax,'#16a34a',1.2,'5 3');
   c.text(c.x(L*0.98,xmin,xmax), c.y(1.4,0,ymax)-5, '安全连挂 1.4 m/s',{color:'#16a34a',size:10,anchor:'end'});
   c.text(c.W/2,13,'溜放速度曲线',{color:'#6b7280',size:11});
+  addLineHover(c,'chart-speed',xmin,xmax,0,ymax,
+    [{name:'难行车·冬季',color:'#2563eb',pts:hw.map(p=>[p.x,p.v]),fmt:v=>fmt(v,2)+' m/s'},
+     {name:'易行车·夏季',color:'#dc2626',pts:es.map(p=>[p.x,p.v]),fmt:v=>fmt(v,2)+' m/s'}],
+    {xFmt:v=>'里程 '+fmt(v,0)+' m'});
   $('legend-speed').innerHTML=`<span class="li"><span class="sw" style="background:#2563eb"></span>难行车·冬季 (v推=1.4)</span><span class="li"><span class="sw" style="background:#dc2626"></span>易行车·夏季 (v推=1.9)</span><span class="li"><span class="sw" style="background:#f59e0b"></span>减速器限速</span><span class="li"><span class="sw" style="background:#16a34a"></span>安全连挂速度</span>`;
 }
 
@@ -1474,6 +1740,11 @@ function renderEnergy(s, cfg){
   c.line([[0,hv0],[L,hv0]],0,L,0,ymax,'#9ca3af',1,'4 3');     // 初始动能高参考线
   c.text(c.x(L*0.98,0,L), c.y(hv0,0,ymax)-4, '初始动能高', {color:'#9ca3af',size:10,anchor:'end'});
   c.text(c.W/2,13,'能高线（难行车·冬季 自由溜放）',{color:'#6b7280',size:11});
+  addLineHover(c,'chart-energy',0,L,0,ymax,
+    [{name:'总能高',color:'#1d4ed8',pts:ea.map(p=>[p.x,p.total]),fmt:v=>fmt(v,3)+' m'},
+     {name:'阻力能高',color:'#dc2626',pts:ea.map(p=>[p.x,p.res]),fmt:v=>fmt(v,3)+' m'},
+     {name:'动能高',color:'#16a34a',pts:ea.map(p=>[p.x,p.kin]),fmt:v=>fmt(v,3)+' m'}],
+    {xFmt:v=>'里程 '+fmt(v,0)+' m', link:'chart-profile'});
   $('legend-energy').innerHTML=`<span class="li"><span class="sw" style="background:#1d4ed8"></span>总能高（初始动能+势能）</span><span class="li"><span class="sw" style="background:#dc2626"></span>阻力能高（累计）</span><span class="li"><span class="sw" style="background:#16a34a"></span>动能高</span><span class="li"><span class="sw" style="background:#9ca3af"></span>初始动能高</span>`;
   renderEnergyBreakdown(ea, s, cfg, veh, vpush);
 }
@@ -1966,6 +2237,7 @@ function regenInitial(){
 
 /* ---------- 事件绑定 ---------- */
 function bindEvents(){
+  bindRanges();
   document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
@@ -1996,7 +2268,7 @@ function bindEvents(){
   // 地区联动
   const region=$('in-region');
   const regionMap={华北:[-10,4],东北:[-25,5],华东:[0,3],华南:[5,2],西北:[-20,5]};
-  region.addEventListener('change',()=>{ const r=regionMap[region.value]; $('in-twinter').value=r[0]; $('in-vwind').value=r[1]; });
+  region.addEventListener('change',()=>{ const r=regionMap[region.value]; $('in-twinter').value=r[0]; $('in-vwind').value=r[1]; updateRangeLabel($('in-twinter')); updateRangeLabel($('in-vwind')); });
   // 空重比例联动（设计输入 ↔ 车流分析滑块，空+重=100）
   const syncEmpty=()=>{ const v=parseInt($('in-empty').value)||0; $('in-heavy').value=100-v; $('traffic-empty').value=v; $('traffic-empty-val').textContent=v+'%'; };
   const syncHeavy=()=>{ const v=parseInt($('in-heavy').value)||0; $('in-empty').value=100-v; $('traffic-empty').value=100-v; $('traffic-empty-val').textContent=(100-v)+'%'; };
@@ -2077,6 +2349,9 @@ function bindEvents(){
     syncSelected();         // 同步检算报告（速度曲线、检算、能力、建议）
     renderParetoTable();
   });
+  // 溜放动画
+  $('btn-play-anim').addEventListener('click',playAnim);
+  $('btn-stop-anim').addEventListener('click',clearAnim);
   // 结果存档
   $('btn-save-current').addEventListener('click',()=>{ saveCurrent('手动保存方案','manual'); toast('已保存当前方案'); });
   $('btn-export-history').addEventListener('click',exportHistory);
