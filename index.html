@@ -205,7 +205,8 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
 .cover-feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px;margin-bottom:34px;text-align:left}
 .cover-feat{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:11px 14px}
 .cover-feat .n{font-weight:700;font-size:13px;color:#fff;display:flex;align-items:center;gap:7px}
-.cover-feat .n span{width:20px;height:20px;border-radius:6px;background:rgba(255,255,255,.16);display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex:none}
+.cover-feat .n .ic{width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.16);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.cover-feat .n .ic svg{width:15px;height:15px}
 .cover-feat .d{font-size:11.5px;color:rgba(255,255,255,.74);margin-top:3px;line-height:1.55}
 .cover-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
 .cover-btn{display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 30px;border-radius:10px;font-size:15.5px;font-weight:700;cursor:pointer;transition:.18s;font-family:var(--font);border:1px solid transparent}
@@ -272,13 +273,12 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
     </div>
 
     <div class="cover-feats">
-      <div class="cover-feat"><div class="n"><span>1</span>设计输入</div><div class="d">三基准车（难/中/易行车）、股道数、阻力系数等参数</div></div>
-      <div class="cover-feat"><div class="n"><span>2</span>多目标优化</div><div class="d">PSO / ALNS / NSGA-II 自动寻优</div></div>
-      <div class="cover-feat"><div class="n"><span>3</span>平面展开图</div><div class="d">溜放线平面布置一键生成（道岔/减速器/曲线）</div></div>
-      <div class="cover-feat"><div class="n"><span>4</span>纵断面方案</div><div class="d">凹形「前陡后缓」纵断面与峰高设计</div></div>
-      <div class="cover-feat"><div class="n"><span>5</span>车流适应性</div><div class="d">蒙特卡洛模拟车流溜放与安全连挂</div></div>
-      <div class="cover-feat"><div class="n"><span>6</span>检算报告</div><div class="d">规范约束逐项自动校核</div></div>
-      <div class="cover-feat"><div class="n"><span>7</span>结果存档</div><div class="d">方案本地保存、导出与载入</div></div>
+      <div class="cover-feat"><div class="n"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><circle cx="9" cy="7" r="2"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="15" cy="17" r="2"/></svg></span>设计输入</div><div class="d">三基准车、股道数、道岔与阻力参数、平面展开图</div></div>
+      <div class="cover-feat"><div class="n"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg></span>多目标优化</div><div class="d">PSO / ALNS / NSGA-II 自动寻优</div></div>
+      <div class="cover-feat"><div class="n"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20 L8 12 L11 15 L15 6 L21 10"/></svg></span>纵断面方案</div><div class="d">凹形「前陡后缓」纵断面、峰高与能高线分析</div></div>
+      <div class="cover-feat"><div class="n"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="8" width="14" height="7" rx="1"/><line x1="5" y1="11" x2="19" y2="11"/><circle cx="9" cy="17" r="1.5"/><circle cx="15" cy="17" r="1.5"/></svg></span>车流适应性</div><div class="d">蒙特卡洛模拟车流溜放与安全连挂</div></div>
+      <div class="cover-feat"><div class="n"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v3H9z"/><rect x="6" y="5" width="12" height="15" rx="2"/><path d="M9 13 l2 2 l4 -4"/></svg></span>检算报告</div><div class="d">规范约束逐项自动校核</div></div>
+      <div class="cover-feat"><div class="n"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11 l4 4 l4 -4"/><path d="M4 19 h16"/></svg></span>结果存档</div><div class="d">方案本地保存、导出与载入</div></div>
     </div>
 
     <div class="cover-actions">
@@ -363,7 +363,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
             </select>
           </div>
         </div>
-        <div class="hint">调车线 16 条 → 线束 2×8；自动推算逆向道岔数与曲线转角。</div>
+        <div class="hint">调车线 16 条 → 线束 2×8；自动推算各型道岔数与曲线转角（可在「道岔与曲线阻力参数」卡片中编辑）。</div>
       </div>
 
       <div class="card">
@@ -444,18 +444,21 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
 
     <div class="card mt">
       <h3><span class="dot"></span>道岔与曲线阻力参数</h3>
-      <div class="sub">阻力功折算系数与道岔类型数量（<b>道岔位置固定</b>，不纳入优化变量；逆向道岔数与曲线转角随规模自动推算）</div>
+      <div class="sub">阻力功折算系数与道岔类型数量（<b>道岔位置固定</b>，不纳入优化变量；各型道岔数默认随调车线规模自动推算、可编辑）</div>
       <div class="grid cols-4">
-        <div class="field"><label>顺向道岔数 <span class="unit">组</span></label><input class="inp" id="in-nfwd" type="number" value="0" min="0" max="40" step="1"></div>
-        <div class="field"><label>菱形交叉数 <span class="unit">组</span></label><input class="inp" id="in-ndia" type="number" value="0" min="0" max="40" step="1"></div>
-        <div class="field"><label>交分道岔数 <span class="unit">组</span></label><input class="inp" id="in-nslip" type="number" value="0" min="0" max="40" step="1"></div>
-        <div class="field"><label>曲线阻力系数 <span class="unit">N·m/kN·°</span></label><input class="inp" id="in-ccurve" type="number" value="8" min="0" step="0.5"></div>
+        <div class="field"><label>逆向道岔数 <span class="unit">组</span></label><input class="inp" id="in-nrev" type="number" value="6" min="0" max="40" step="1"></div>
+        <div class="field"><label>顺向道岔数 <span class="unit">组</span></label><input class="inp" id="in-nfwd" type="number" value="2" min="0" max="40" step="1"></div>
+        <div class="field"><label>菱形交叉数 <span class="unit">组</span></label><input class="inp" id="in-ndia" type="number" value="1" min="0" max="40" step="1"></div>
+        <div class="field"><label>交分道岔数 <span class="unit">组</span></label><input class="inp" id="in-nslip" type="number" value="1" min="0" max="40" step="1"></div>
+      </div>
+      <div class="grid cols-4" style="margin-top:10px">
         <div class="field"><label>逆向道岔阻力系数 <span class="unit">N·m/kN</span></label><input class="inp" id="in-crev" type="number" value="24" min="0" step="1"></div>
         <div class="field"><label>顺向道岔阻力系数 <span class="unit">N·m/kN</span></label><input class="inp" id="in-cfwd" type="number" value="12" min="0" step="1"></div>
         <div class="field"><label>菱形交叉阻力系数 <span class="unit">N·m/kN</span></label><input class="inp" id="in-cdia" type="number" value="12" min="0" step="1"></div>
         <div class="field"><label>交分道岔阻力系数 <span class="unit">N·m/kN</span></label><input class="inp" id="in-cslip" type="number" value="48" min="0" step="1"></div>
+        <div class="field"><label>曲线阻力系数 <span class="unit">N·m/kN·°</span></label><input class="inp" id="in-ccurve" type="number" value="8" min="0" step="0.5"></div>
       </div>
-      <div class="sub" style="margin:14px 0 4px">自动推算（随调车线规模，与下方平面展开图一一对应）：逆向道岔 <b id="plan-nrev">6</b> 组 · 曲线总转角 <b id="plan-theta">36</b>°</div>
+      <div class="sub" style="margin:14px 0 4px">随调车线规模自动推算（与下方平面展开图一一对应）：曲线总转角 <b id="plan-theta">36</b>°</div>
       <div class="plan-block">
         <div class="sub" style="font-weight:700;color:var(--text);margin-bottom:6px">平面展开图</div>
         <div class="sub">溜放线平面展开示意（画法依 switchyard.top/hump）：控制点 = 当前方案纵断面变坡点 + 道岔 / 减速器固定位；道岔与减速器位置固定、不参与优化，道岔类型数量与上方参数一一对应</div>
@@ -463,7 +466,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
         <div class="legend" id="legend-plan"></div>
         <div id="plan-summary"></div>
       </div>
-      <div class="hint">道岔阻力功 E_s = 逆向·N逆 + 顺向·(N顺+N菱) + 交分·N交分；曲线阻力功 E_c = 8·θ总。默认系数取自教材/北交大参考值（逆向 24、顺向 12、菱形 12、交分 48 N·m/kN，曲线 8 N·m/kN·°），可编辑以便与规范核对。</div>
+      <div class="hint">道岔阻力功 E_s = 逆向·N逆 + 顺向·(N顺+N菱) + 交分·N交分；曲线阻力功 E_c = 8·θ总。默认系数取自教材/北交大参考值（逆向 24、顺向 12、菱形 12、交分 48 N·m/kN，曲线 8 N·m/kN·°），可编辑以便与规范核对。各型道岔沿溜放线全长散布（加速坡 / 中间坡 / 道岔区坡 / 打靶区均有），位置固定、不参与优化。</div>
     </div>
 
     <div class="card mt">
@@ -508,7 +511,6 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
       </div>
       <div class="toolbar mt">
         <button class="btn ghost" id="btn-init">生成初始方案（规范模板）</button>
-        <button class="btn primary lg" id="btn-run">开始多目标优化</button>
         <span class="muted" id="input-status">就绪</span>
       </div>
     </div>
@@ -868,12 +870,25 @@ function energyAnalysis(prof, veh, cond, vpush){
 
 /* ---------- 道岔/曲线参数（随规模，道岔位置固定） ---------- */
 function trackParams(lines){
-  let nSwitch, curveDeg;
-  if(lines<=16){ nSwitch=6; curveDeg=36; }
-  else if(lines<=24){ nSwitch=8; curveDeg=46; }
-  else if(lines<=32){ nSwitch=10; curveDeg=56; }
-  else { nSwitch=12; curveDeg=66; }
-  return {nSwitch, curveDeg};
+  let nRev, nFwd, nDia, nSlip, curveDeg;
+  if(lines<=16){ nRev=6;  nFwd=2; nDia=1; nSlip=1; curveDeg=36; }
+  else if(lines<=24){ nRev=8;  nFwd=2; nDia=2; nSlip=1; curveDeg=46; }
+  else if(lines<=32){ nRev=10; nFwd=3; nDia=2; nSlip=2; curveDeg=56; }
+  else { nRev=12; nFwd=3; nDia=3; nSlip=2; curveDeg=66; }
+  return {nRev, nFwd, nDia, nSlip, curveDeg};
+}
+/* 将某型道岔数量按坡段权重散布到各坡段（道岔沿溜放线全长散布：加速坡/中间坡/道岔区坡/打靶区均有，道岔区坡相对集中） */
+function distributeCount(n, N){
+  const arr=new Array(N).fill(0);
+  if(n<=0 || !N) return arr;
+  const w=new Array(N).fill(1);
+  if(N>=2){ w[N-2]=2; w[N-1]=2; }               // 道岔区坡 / 打靶区 2 倍权重
+  const tot=w.reduce((a,b)=>a+b,0);
+  for(let j=0;j<N;j++) arr[j]=Math.floor(n*w[j]/tot);
+  let rem=n-arr.reduce((a,b)=>a+b,0);
+  const order=[...Array(N).keys()].sort((a,b)=>w[b]-w[a]);
+  for(let k=0;k<rem;k++) arr[order[k%N]]++;
+  return arr;
 }
 
 /* ---------- 优化目标定义 ---------- */
@@ -916,7 +931,7 @@ function makeCfg(){
   for(let i=0;i<nb;i++){ lb.push(0.04); ub.push(0.96); }   // x 占比
   for(let i=0;i<nb;i++){ lb.push(0.02); ub.push(0.98); }   // h 占比
 
-  // 道岔/曲线阻力参数（可编辑）：逆向道岔数与曲线转角随规模自动推算，其余默认 0
+  // 道岔/曲线阻力参数（可编辑）：各型道岔数默认随规模自动推算、可编辑；道岔位置固定不优化
   const coef={
     rev:   parseFloat($('in-crev').value)   || 24,
     fwd:   parseFloat($('in-cfwd').value)   || 12,
@@ -924,14 +939,14 @@ function makeCfg(){
     slip:  parseFloat($('in-cslip').value)  || 48,
     curve: parseFloat($('in-ccurve').value) || 8,
   };
-  const nRev=tp.nSwitch, nFwd=parseInt($('in-nfwd').value)||0, nDia=parseInt($('in-ndia').value)||0, nSlip=parseInt($('in-nslip').value)||0;
+  const readCount=(id,def)=>{ const v=parseInt($(id).value); return isNaN(v)?def:v; };
+  const nRev=readCount('in-nrev',tp.nRev), nFwd=readCount('in-nfwd',tp.nFwd), nDia=readCount('in-ndia',tp.nDia), nSlip=readCount('in-nslip',tp.nSlip);
   const thetaCurve=tp.curveDeg;
 
-  // 道岔/曲线分配到各坡段（道岔集中在道岔区坡 = 倒数第二段，道岔位置固定不优化）
+  // 道岔沿溜放线全长散布（加速坡/中间坡/道岔区坡/打靶区均有，道岔区坡相对集中）；曲线转角集中在道岔区坡（倒数第二段）
   const switchSeg = Math.max(1, N-2);
-  const nRevArr=new Array(N).fill(0), nFwdArr=new Array(N).fill(0), nDiaArr=new Array(N).fill(0), nSlipArr=new Array(N).fill(0);
+  const nRevArr=distributeCount(nRev,N), nFwdArr=distributeCount(nFwd,N), nDiaArr=distributeCount(nDia,N), nSlipArr=distributeCount(nSlip,N);
   const thetaArr=new Array(N).fill(0), thetaSArr=new Array(N).fill(0);
-  nRevArr[switchSeg]=nRev; nFwdArr[switchSeg]=nFwd; nDiaArr[switchSeg]=nDia; nSlipArr[switchSeg]=nSlip;
   thetaArr[switchSeg]=thetaCurve;
 
   const objIdx = [...document.querySelectorAll('#obj-grid .obj-card.on')].map(el=>el.dataset.key);
@@ -1833,7 +1848,7 @@ function buildFlatLayout(cfg, s){
   const n=segs.length;
   const lines=parseInt($('in-lines').value)||16;
   const tp=trackParams(lines);
-  const nRev=(cfg.nRev!=null)?cfg.nRev:tp.nSwitch;                // 逆向道岔（随规模自动推算）
+  const nRev=(cfg.nRev!=null)?cfg.nRev:tp.nRev;                // 逆向道岔（随规模自动推算）
   const thetaCurve=(cfg.thetaCurve!=null)?cfg.thetaCurve:tp.curveDeg;
   // 与「道岔与曲线阻力参数」卡片一一对应：顺向 / 菱形 / 交分为可编辑数量
   const nFwd=(cfg.nFwd!=null)?cfg.nFwd:0, nDia=(cfg.nDia!=null)?cfg.nDia:0, nSlip=(cfg.nSlip!=null)?cfg.nSlip:0;
@@ -1892,8 +1907,7 @@ function renderPlan(s, cfg){
   const FL=buildFlatLayout(cfg, s);
   const hHump=s.prof[0].h;                    // 峰高 H
   // 同步自动推算量到卡片（与平面展开图一一对应）
-  const _nrevEl=$('plan-nrev'), _thEl=$('plan-theta');
-  if(_nrevEl) _nrevEl.textContent=FL.nRev;
+  const _thEl=$('plan-theta');
   if(_thEl) _thEl.textContent=Math.round(FL.thetaCurve);
 
   // 复刻 HumpLayoutCtrl 坐标系：scaleX=3.5，左距（预留推送线/峰顶），基线 Y=100，横向滚动
@@ -1932,11 +1946,12 @@ function renderPlan(s, cfg){
   byC.forEach(e=>{ if(e.hasCurve){ if(e.centerX-cp<55) cy+=15; else cy=W+14+e.deltaY; curveY[e.id]=cy; cp=e.centerX; } });
   const segRender=segs.map(e=>({...e, lengthY:lengthY[e.id]??W-10, curveDegreeY:curveY[e.id]??W+e.deltaY+15}));
 
-  // 道岔渲染：按类型区分（逆向/顺向单开、交分、菱形），均匀散布于道岔区（画法依 switchyard.top/hump）
+  // 道岔渲染：按类型区分（逆向/顺向单开、交分、菱形），沿溜放线全长散布（加速坡→中间坡→道岔区→打靶区，画法依 switchyard.top/hump）
   const swRender=[];
   const za=posById['道岔区'], zb=posById['打靶区'];
+  const xSwStart=L*0.06, xSwEnd=L;
   FL.switches.forEach((sw,i)=>{
-    const bx=(za&&zb&&FL.switches.length>0)?(za.x+(zb.x-za.x)*(i+0.5)/FL.switches.length):cfg.xSwitch*L;
+    const bx=FL.switches.length>1 ? xSwStart+(xSwEnd-xSwStart)*(i/(FL.switches.length-1)) : (xSwStart+xSwEnd)/2;
     const x=px(bx); let dx=0,dy=0;
     if(sw.type==='Single'){
       if(sw.direction==='Forward'){ dx=-46; dy=(sw.side==='Left')?15:-15; }
@@ -2014,14 +2029,14 @@ function renderPlan(s, cfg){
     if(ex-sx<28) return;
     T((sx+ex)/2, nameY, sl.name+' '+fmt(sl.grade,1)+'‰', '#475569', 10.5);
   });
-  // 道岔数量标注（道岔区内，与上方参数一一对应）
+  // 道岔数量标注（沿溜放线全长，与上方参数一一对应）
   const swParts=[];
   if(FL.nRev>0) swParts.push('逆向 '+FL.nRev);
   if(FL.nFwd>0) swParts.push('顺向 '+FL.nFwd);
   if(FL.nSlip>0) swParts.push('交分 '+FL.nSlip);
   if(FL.nDia>0) swParts.push('菱形 '+FL.nDia);
-  if(za&&zb&&swParts.length){
-    T(px((za.x+zb.x)/2), W+30, '道岔：'+swParts.join(' · '), '#124170', 11);
+  if(swParts.length){
+    T(px(L*0.5), W+30, '道岔：'+swParts.join(' · '), '#124170', 11);
   }
 
   // 7) 里程轴
@@ -2054,7 +2069,7 @@ function renderPlanSummary(s, cfg, FL){
         ${row('坡段数', FL.n+' 段（加速/中间/道岔区/打靶）')}
         ${row('控制点数', FL.positions.length+' 个')}
         ${row('区段数', FL.segments.length+' 段')}
-        ${row('逆向单开道岔', FL.nRev+' 组（自动推算）')}
+        ${row('逆向单开道岔', FL.nRev+' 组')}
         ${row('顺向单开道岔', FL.nFwd+' 组')}
         ${row('交分道岔', FL.nSlip+' 组')}
         ${row('菱形交叉', FL.nDia+' 组')}
@@ -2086,7 +2101,7 @@ function renderVehicles(){
     grid.appendChild(d);
   });
   grid.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',()=>{
-    if($('btn-run').disabled) return;
+    if($('btn-run2').disabled) return;
     clearTimeout(vehicleTimer);
     vehicleTimer=setTimeout(()=>{ readVehicles(); regenInitial(); },200);
   }));
@@ -2358,13 +2373,16 @@ function bindEvents(){
   $('traffic-empty').addEventListener('input',()=>{
     $('traffic-empty-val').textContent=$('traffic-empty').value+'%';
     clearTimeout(trafficTimer);
-    trafficTimer=setTimeout(()=>{ if(!$('btn-run').disabled) refreshTraffic(); },120);
+    trafficTimer=setTimeout(()=>{ if(!$('btn-run2').disabled) refreshTraffic(); },120);
   });
   $('btn-traffic-run').addEventListener('click',refreshTraffic);
   // 设计输入实时联动：任一输入变化即重算初始方案与全部输出（防抖；优化运行中不触发）
-  const designInputIds=['in-lines','in-daily','in-machines','in-region','in-twinter','in-vwind','in-empty','in-heavy','in-peak','in-hmax','in-hmin','in-length','in-segments','in-nfwd','in-ndia','in-nslip','in-ccurve','in-crev','in-cfwd','in-cdia','in-cslip'];
+  // 调车线规模变化时，自动重推各型道岔默认数（可再手动编辑）
+  const syncSwitchCounts=()=>{ const tp=trackParams(parseInt($('in-lines').value)||16); const v=['in-nrev','in-nfwd','in-ndia','in-nslip'].map(id=>$(id)); const vals=[tp.nRev,tp.nFwd,tp.nDia,tp.nSlip]; vals.forEach((val,i)=>{ if(v[i]) v[i].value=val; }); };
+  $('in-lines').addEventListener('change',()=>{ syncSwitchCounts(); scheduleRegen(); });
+  const designInputIds=['in-lines','in-daily','in-machines','in-region','in-twinter','in-vwind','in-empty','in-heavy','in-peak','in-hmax','in-hmin','in-length','in-segments','in-nrev','in-nfwd','in-ndia','in-nslip','in-ccurve','in-crev','in-cfwd','in-cdia','in-cslip'];
   let regenTimer=null;
-  const scheduleRegen=()=>{ if($('btn-run').disabled) return; clearTimeout(regenTimer); regenTimer=setTimeout(regenInitial,150); };
+  const scheduleRegen=()=>{ if($('btn-run2').disabled) return; clearTimeout(regenTimer); regenTimer=setTimeout(regenInitial,150); };
   designInputIds.forEach(id=>{ const el=$(id); if(!el) return; el.addEventListener('input',scheduleRegen); el.addEventListener('change',scheduleRegen); });
   // 生成初始方案
   $('btn-init').addEventListener('click',()=>{
@@ -2377,7 +2395,7 @@ function bindEvents(){
     const cfg=makeCfg();
     state.cfg=cfg; state.iterHistory=[]; state.archive=[];
     if(cfg.objIdx.length<1){ alert('请至少选择一个优化目标'); return; }
-    $('btn-run').disabled=$('btn-run2').disabled=true; $('opt-status').textContent='优化中…'; $('opt-progress').style.width='0%';
+    $('btn-run2').disabled=true; $('opt-status').textContent='优化中…'; $('opt-progress').style.width='0%';
     setTimeout(()=>{
       (async()=>{
         try{
@@ -2405,21 +2423,20 @@ function bindEvents(){
             state.selected=archive[0]; renderProfilePanel(); syncSelected();
             saveCurrent('优化·'+(algo==='nsga2'?'NSGA-II':(algo==='alns'?'ALNS':'MOPSO')), algo);
           }
-          $('btn-run').disabled=$('btn-run2').disabled=false;
+          $('btn-run2').disabled=false;
           switchTab('p-optimize');
           window.dispatchEvent(new Event('resize'));
         }catch(e){
           console.error(e);
           $('opt-status').textContent='优化出错：'+(e&&e.message?e.message:String(e));
-          $('btn-run').disabled=$('btn-run2').disabled=false;
+          $('btn-run2').disabled=false;
           $('opt-progress').style.width='0%';
         }
       })();
     },30);
   };
-  $('btn-run').addEventListener('click',run);
   $('btn-run2').addEventListener('click',run);
-  $('btn-stop').addEventListener('click',()=>{ STOP=true; $('btn-run').disabled=$('btn-run2').disabled=false; $('opt-status').textContent='已停止'; });
+  $('btn-stop').addEventListener('click',()=>{ STOP=true; $('btn-run2').disabled=false; $('opt-status').textContent='已停止'; });
   // 方案切换：重算该方案的纵断面图、统计卡、坡段表与检算报告
   $('profile-select').addEventListener('change',()=>{
     renderProfilePanel();   // 更新纵断面图 + 统计卡 + 坡段表 + 来源，并保留当前选中方案
