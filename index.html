@@ -178,6 +178,8 @@ tr.selected td{background:var(--primary-50)!important}
 .conclusion.warn{background:var(--warning-bg);border-color:#fde68a;color:#92400e}
 .conclusion.danger{background:var(--danger-bg);border-color:#fecaca;color:#991b1b}
 .conclusion strong{font-weight:800}
+.conclusion .dotlist{margin:8px 0 0;padding-left:18px;line-height:1.7}
+.conclusion .dotlist li{margin:4px 0}
 
 /* 页脚 */
 .footer{margin-top:34px;padding:20px 24px;border-top:1px solid var(--border);color:var(--text-3);font-size:12px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
@@ -652,10 +654,20 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
       </div>
     </div>
     <div class="card mt">
-      <h3><span class="dot"></span>极端设计 vs 典型设计：非极端条件下的风险对比</h3>
-      <div class="sub">极端设计=保证空车冬季溜到位+重车夏季不超速（当前方案）；典型设计=仅按中行车设计（峰高低、减速器少、成本低）</div>
-      <div class="chart-box" id="chart-traffic-risk"></div>
-      <div class="legend" id="legend-risk"></div>
+      <h3><span class="dot"></span>两种峰高方案的风险对比（非极端车流）</h3>
+      <div class="sub"><b>按难行车定峰</b>（当前方案，高峰高）保证空车冬季溜到位，但重车夏季易超速；<b>按中行车定峰</b>（对照方案，低峰高）峰高低、成本省，但空车冬季易溜不到位。下图把「失效」拆成两种模式分别对比。</div>
+      <div class="grid cols-2">
+        <div>
+          <div class="sub" style="font-weight:700;color:var(--text);margin-bottom:4px">① 溜不到位率（冬季末速 &lt; 1.4 m/s）</div>
+          <div class="chart-box" id="chart-risk-underreach"></div>
+          <div class="legend" id="legend-risk-underreach"></div>
+        </div>
+        <div>
+          <div class="sub" style="font-weight:700;color:var(--text);margin-bottom:4px">② 超速率（夏季最大速度 &gt; 7 m/s）</div>
+          <div class="chart-box" id="chart-risk-over"></div>
+          <div class="legend" id="legend-risk-over"></div>
+        </div>
+      </div>
       <div class="conclusion info mt" id="traffic-conclusion"></div>
     </div>
   </div>
@@ -2260,49 +2272,82 @@ function renderTrafficCurve(){
 }
 
 function renderTrafficRisk(){
-  const c=makeChart('chart-traffic-risk',{ml:60});
   const cfg=state.cfg;
-  const extremeProf = state.selected?state.selected.prof:defaultProfile(cfg);
-  // 典型设计 = 仅按中行车（Q≈70t，远比难行车 Q≈30t 好溜）设计：按同一坡形等比缩小峰高，
-  // 使「中行车」冬季末速恰好 1.4 m/s —— 峰高明显低于极端设计，并随输入（峰高/气温/风速）实时变化
+  const profA = state.selected?state.selected.prof:defaultProfile(cfg);   // 方案①：按难行车定峰（当前方案）
+  // 方案②（对照）：按中行车定峰 —— 同一坡形等比缩小峰高，使中行车（Q≈70t）冬季末速恰好 1.4 m/s，峰高明显低于方案①
   let kLo=0.15, kHi=1.0;
   for(let it=0; it<14; it++){
     const k=(kLo+kHi)/2;
-    const s=simulate(extremeProf.map(p=>({x:p.x,h:p.h*k})), VEHICLES.medium, cfg.wWinter, 1.4);
+    const s=simulate(profA.map(p=>({x:p.x,h:p.h*k})), VEHICLES.medium, cfg.wWinter, 1.4);
     if(endSpeed(s)>=1.4) kHi=k; else kLo=k;
   }
   const kTyp=(kLo+kHi)/2;
-  const typicalProf = extremeProf.map(p=>({x:p.x, h:p.h*kTyp}));
+  const profB = profA.map(p=>({x:p.x, h:p.h*kTyp}));
+  const H1=profA[0].h, H2=profB[0].h;
+
+  // 蒙特卡洛：对每个空车比例，统计两种方案各自的两种失效模式
   const tests=[0,10,20,30,40,50,60,70,80];
-  const xs=[], fe=[], ft=[];
+  const xs=[], uA=[], uB=[], oA=[], oB=[], fA=[], fB=[];
   tests.forEach(pe=>{
-    const pEmpty=pe/100; let re=0,rt=0; const N=300;
+    const pEmpty=pe/100; let ua=0,ub=0,oa=0,ob=0,fa=0,fb=0; const N=300;
     for(let i=0;i<N;i++){
       const isEmpty=Math.random()<pEmpty;
       let Q,f; if(isEmpty){Q=clamp(25+gauss()*3.5,18,34);f=11.41;}else{Q=clamp(88+gauss()*5,70,96);f=7.71;}
       const veh={Q,f,n:4};
-      const we=simulate(extremeProf,veh,cfg.wWinter,1.4), se=simulate(extremeProf,veh,cfg.wSummer,1.9);
-      const wt=simulate(typicalProf,veh,cfg.wWinter,1.4), st=simulate(typicalProf,veh,cfg.wSummer,1.9);
-      const failE = (endSpeed(we)<1.4)||(maxSpeed(se)>7.0);
-      const failT = (endSpeed(wt)<1.4)||(maxSpeed(st)>7.0);
-      if(failE)re++; if(failT)rt++;
+      const wA=simulate(profA,veh,cfg.wWinter,1.4), sA=simulate(profA,veh,cfg.wSummer,1.9);
+      const wB=simulate(profB,veh,cfg.wWinter,1.4), sB=simulate(profB,veh,cfg.wSummer,1.9);
+      const ua_=endSpeed(wA)<1.4, oa_=maxSpeed(sA)>7.0;
+      const ub_=endSpeed(wB)<1.4, ob_=maxSpeed(sB)>7.0;
+      if(ua_)ua++; if(ub_)ub++; if(oa_)oa++; if(ob_)ob++;
+      if(ua_||oa_)fa++; if(ub_||ob_)fb++;
     }
-    xs.push(pe); fe.push(re/N*100); ft.push(rt/N*100);
+    xs.push(pe);
+    uA.push(ua/N*100); uB.push(ub/N*100);
+    oA.push(oa/N*100); oB.push(ob/N*100);
+    fA.push(fa/N*100); fB.push(fb/N*100);
   });
-  c.grid(0,80,0,100);
-  c.axes(0,80,0,100, v=>v+'%', v=>v+'%', '空车比例 (%)', '失效率 (%)');
-  c.line(xs.map((x,i)=>[x,fe[i]]),0,80,0,100,'#16a34a',2);
-  c.line(xs.map((x,i)=>[x,ft[i]]),0,80,0,100,'#dc2626',2);
-  // 当前空车比例竖标线 + 当前值散点（随滑块联动）
+
   const curPe=parseInt($('traffic-empty').value);
   const ki=Math.max(0,Math.min(tests.length-1,Math.round(curPe/10)));
-  c.line([[curPe,0],[curPe,100]],0,80,0,100,'#f59e0b',1.5,'4 3');
-  c.scatter([[curPe,fe[ki]]],0,80,0,100,'#16a34a',5);
-  c.scatter([[curPe,ft[ki]]],0,80,0,100,'#dc2626',5);
-  c.text(c.x(curPe,0,80), c.y(96,0,100), `当前 ${curPe}%`, {color:'#f59e0b',size:10});
-  $('legend-risk').innerHTML=`<span class="li"><span class="sw" style="background:#16a34a"></span>极端设计（峰高 ${fmt(extremeProf[0].h,2)} m）失效率</span><span class="li"><span class="sw" style="background:#dc2626"></span>典型设计·仅按中行车（峰高 ${fmt(typicalProf[0].h,2)} m）失效率</span><span class="li"><span class="sw" style="background:#f59e0b"></span>当前空车比例 ${curPe}%</span>`;
-  // 结论（随当前空车比例联动）
-  $('traffic-conclusion').innerHTML=`<strong>结论：</strong>当前空车比例 <b>${curPe}%</b> 下，<b>极端设计</b>（峰高 ${fmt(extremeProf[0].h,2)} m，按难行车定峰）失效率 <b>${fmt(fe[ki],1)}%</b>；<b>典型设计</b>（峰高 ${fmt(typicalProf[0].h,2)} m，仅按中行车定峰）失效率 <b>${fmt(ft[ki],1)}%</b>。两条曲线失效率分别由<b>重车夏季超速</b>（极端设计：高峰高 → 重车越多失效率越高）与<b>空车冬季溜不到位</b>（典型设计：低峰高 → 空车越多失效率越高）主导、此消彼长：高峰高的极端设计保证空车冬季溜到位，但重车夏季溜放过快易超速；低峰高的典型设计重车夏季安全，但空车冬季溜不到位。这说明<b>峰高不能固定取极值，而应随实际空重比调整</b>——这正是「车流适应性优化」的价值：按真实车流组成确定峰高与减速器配置，在安全与成本之间取得平衡。`;
+  const nameA=`按难行车定峰 H=${fmt(H1,2)} m`, nameB=`按中行车定峰 H=${fmt(H2,2)} m`;
+  const CA='#2563eb', CB='#ea580c';
+
+  // 图① 溜不到位率（冬季末速 < 1.4 m/s）
+  (function(){
+    const c=makeChart('chart-risk-underreach',{ml:62});
+    c.grid(0,80,0,100);
+    c.axes(0,80,0,100, v=>v+'%', v=>v+'%', '空车比例 (%)', '溜不到位率 (%)');
+    c.line(xs.map((x,i)=>[x,uA[i]]),0,80,0,100,CA,2.2);
+    c.line(xs.map((x,i)=>[x,uB[i]]),0,80,0,100,CB,2.2);
+    c.line([[curPe,0],[curPe,100]],0,80,0,100,'#f59e0b',1.5,'4 3');
+    c.scatter([[curPe,uA[ki]]],0,80,0,100,CA,5);
+    c.scatter([[curPe,uB[ki]]],0,80,0,100,CB,5);
+    c.text(c.x(curPe,0,80)+8, c.y(0,0,100)-6, `当前 ${curPe}%`, {color:'#f59e0b',size:10,anchor:'start'});
+    $('legend-risk-underreach').innerHTML=`<span class="li"><span class="sw" style="background:${CA}"></span>${nameA}</span><span class="li"><span class="sw" style="background:${CB}"></span>${nameB}</span><span class="li"><span class="sw" style="background:#f59e0b"></span>当前空车比例 ${curPe}%</span>`;
+  })();
+
+  // 图② 超速率（夏季最大速度 > 7 m/s）
+  (function(){
+    const c=makeChart('chart-risk-over',{ml:62});
+    c.grid(0,80,0,100);
+    c.axes(0,80,0,100, v=>v+'%', v=>v+'%', '空车比例 (%)', '超速率 (%)');
+    c.line(xs.map((x,i)=>[x,oA[i]]),0,80,0,100,CA,2.2);
+    c.line(xs.map((x,i)=>[x,oB[i]]),0,80,0,100,CB,2.2);
+    c.line([[curPe,0],[curPe,100]],0,80,0,100,'#f59e0b',1.5,'4 3');
+    c.scatter([[curPe,oA[ki]]],0,80,0,100,CA,5);
+    c.scatter([[curPe,oB[ki]]],0,80,0,100,CB,5);
+    c.text(c.x(curPe,0,80)+8, c.y(0,0,100)-6, `当前 ${curPe}%`, {color:'#f59e0b',size:10,anchor:'start'});
+    $('legend-risk-over').innerHTML=`<span class="li"><span class="sw" style="background:${CA}"></span>${nameA}</span><span class="li"><span class="sw" style="background:${CB}"></span>${nameB}</span><span class="li"><span class="sw" style="background:#f59e0b"></span>当前空车比例 ${curPe}%</span>`;
+  })();
+
+  // 结论（随当前空车比例联动，两种失效模式 → 综合失效率）
+  $('traffic-conclusion').innerHTML=`
+    <strong>结论（当前空车比例 ${curPe}%）：</strong>
+    <ul class="dotlist">
+      <li><b style="color:${CA}">按难行车定峰</b>（峰高 ${fmt(H1,2)} m）：溜不到位率 <b>${fmt(uA[ki],1)}%</b>、超速率 <b>${fmt(oA[ki],1)}%</b> → 综合失效率 <b>${fmt(fA[ki],1)}%</b>（空车冬季有保证，<b>重车夏季易超速</b>）。</li>
+      <li><b style="color:${CB}">按中行车定峰</b>（峰高 ${fmt(H2,2)} m）：溜不到位率 <b>${fmt(uB[ki],1)}%</b>、超速率 <b>${fmt(oB[ki],1)}%</b> → 综合失效率 <b>${fmt(fB[ki],1)}%</b>（重车夏季安全，<b>空车冬季易溜不到位</b>）。</li>
+    </ul>
+    <div class="mt">峰高是一对矛盾：<b>高峰高</b>保证空车到位、但重车夏季超速；<b>低峰高</b>重车安全、但空车溜不到位。因此峰高不能固定取极值，而应<b>随实际空重比取平衡值</b>——这正是「车流适应性」的价值所在。</div>`;
 }
 
 function refreshTraffic(){
