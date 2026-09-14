@@ -422,18 +422,18 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
         <div class="row">
           <div class="field">
             <label>最大峰高限制 <span class="unit">m</span></label>
-            <div class="range-row"><input class="inp inp-range" id="in-hmax" type="range" value="4.5" min="3" max="6" step="0.1" data-unit=" m"><span class="range-val">4.5 m</span></div>
+            <div class="range-row"><input class="inp inp-range" id="in-hmax" type="range" value="5.5" min="4.5" max="7" step="0.1" data-unit=" m"><span class="range-val">5.5 m</span></div>
           </div>
           <div class="field">
             <label>最小峰高 <span class="unit">m</span></label>
-            <div class="range-row"><input class="inp inp-range" id="in-hmin" type="range" value="3.0" min="2" max="5" step="0.1" data-unit=" m"><span class="range-val">3.0 m</span></div>
+            <div class="range-row"><input class="inp inp-range" id="in-hmin" type="range" value="4.0" min="3.5" max="5.5" step="0.1" data-unit=" m"><span class="range-val">4.0 m</span></div>
           </div>
           <div class="field">
             <label>溜放部分总长 <span class="unit">m</span></label>
             <div class="range-row"><input class="inp inp-range" id="in-length" type="range" value="380" min="250" max="600" step="10" data-unit=" m"><span class="range-val">380 m</span></div>
           </div>
         </div>
-        <div class="hint">我国驼峰峰高一般 3.0～4.0 m，北方寒冷地区比南方高 0.5～1.0 m。</div>
+        <div class="hint">我国驼峰峰高一般 4.0 m 以上，北方寒冷地区比南方高 0.5～1.0 m。</div>
       </div>
     </div>
 
@@ -1281,10 +1281,10 @@ function defaultProfile(cfg){
   const N=cfg.N, L=cfg.L;
   const cold=(cfg.region==='东北'||cfg.region==='西北');
   let fracs, grades;
-  if(N===3){ fracs=[0.18,0.60,0.22]; grades=[42,2.5,0.8]; }
-  else if(N===4){ fracs=[0.12,0.24,0.42,0.22]; grades=cold?[45,16,2.0,0.8]:[42,15,2.0,0.8]; }
-  else if(N===5){ fracs=[0.10,0.18,0.18,0.36,0.18]; grades=cold?[45,20,12,2.0,0.8]:[42,18,10,2.0,0.8]; }
-  else { fracs=[0.08,0.14,0.14,0.14,0.32,0.18]; grades=cold?[45,22,17,12,2.0,0.8]:[42,20,15,10,2.0,0.8]; }
+  if(N===3){ fracs=[0.18,0.60,0.22]; grades=[48,4.0,1.0]; }
+  else if(N===4){ fracs=[0.12,0.24,0.42,0.22]; grades=cold?[50,19,2.5,1.0]:[48,18,2.5,1.0]; }
+  else if(N===5){ fracs=[0.10,0.18,0.18,0.36,0.18]; grades=cold?[50,22,13,2.5,1.0]:[48,20,11,2.5,1.0]; }
+  else { fracs=[0.08,0.14,0.14,0.14,0.32,0.18]; grades=cold?[50,24,18,13,2.5,1.0]:[48,22,16,11,2.5,1.0]; }
   // 峰高 = 各坡段坡度×长度之和（保证末点高程=0，纵断面自洽）
   let H = fracs.reduce((s,f,j)=>s+grades[j]*f*L/1000, 0);
   // 按用户设定的峰高上/下限等比缩放坡度，使默认方案落在允许峰高区间内
