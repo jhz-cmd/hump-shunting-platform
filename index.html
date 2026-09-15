@@ -522,7 +522,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
     </div>
     <div class="card">
       <h3><span class="dot"></span>优化目标</h3>
-      <div class="sub">经济性目标（成本最低、设备最少）与性能目标（解体能力、连挂率、可靠性）相互矛盾，不能同时选择；同类目标之间不互斥</div>
+      <div class="sub">多目标优化的核心就是权衡<b>经济性</b>（成本、设备，越小越好）与<b>性能</b>（能力、连挂率、可靠性，越大越好）——它们天然矛盾，正是 Pareto 前沿要刻画的对象，可任意组合。提示：当前模型中「能力」「设备」与「成本」同向变化、仅「冬季可靠性」与之反向，故至少勾选「冬季可靠性」才能得到非单点的权衡前沿。</div>
       <div class="obj-grid" id="obj-grid"></div>
     </div>
     <div class="card mt">
@@ -911,14 +911,16 @@ const OBJDEF = {
   equipment: { name:'减速器/减速顶数量最少', dir:'min', unit:'台',     tag:'min', desc:'减速器节数 + 减速顶数量' },
 };
 
-/* 目标分组与互斥关系：经济性目标（成本、设备）与性能目标（能力、连挂率、可靠性）两两矛盾，不能同时选择 */
+/* 目标分组：经济性（成本、设备）与性能（能力、连挂率、可靠性）。
+   多目标优化的本质就是权衡这两组目标，因此它们可以、也应当被同时选择，不再做「互斥禁止」。
+   TRADEOFFS 仅用于在卡片上提示每项目标真正与之「反向」（形成 Pareto 权衡）的目标。 */
 const OBJ_GROUP = { cost:'经济性', equipment:'经济性', capacity:'性能', coupling:'性能', winter:'性能' };
-const CONFLICTS = {
-  cost:      ['capacity','coupling','winter'],
-  equipment: ['capacity','coupling','winter'],
-  capacity:  ['cost','equipment'],
-  coupling:  ['cost','equipment'],
-  winter:    ['cost','equipment'],
+const TRADEOFFS = {
+  cost:      ['winter'],
+  capacity:  ['winter'],
+  coupling:  [],
+  winter:    ['cost','capacity','equipment'],
+  equipment: ['winter'],
 };
 
 /* ---------- 编码/解码（优化变量 → 纵断面） ---------- */
@@ -2385,25 +2387,15 @@ function bindEvents(){
     t.classList.add('active'); $(t.dataset.panel).classList.add('active');
     refreshVisibleCharts(t.dataset.panel);
   }));
-  // 目标卡片（经济性目标与性能目标互斥，不能同时选择）
+  // 目标卡片：允许任意组合（多目标的本质就是权衡经济性 vs 性能），默认勾选「成本 + 冬季可靠性」这对真正的权衡目标
   const grid=$('obj-grid');
   Object.keys(OBJDEF).forEach(k=>{
     const o=OBJDEF[k];
     const grp=OBJ_GROUP[k];
-    const d=document.createElement('div'); d.className='obj-card'+(k==='cost'||k==='capacity'?' on':''); d.dataset.key=k;
-    const cfNames=CONFLICTS[k].map(c=>OBJDEF[c].name).join('、');
-    d.innerHTML=`<span class="ck">✓</span><div class="nm">${o.name}</div><div class="ds">${o.desc}</div><span class="tag ${o.tag}">${o.tag==='min'?'越小越优':'越大越优'}</span><span class="grp grp-${grp==='经济性'?'eco':'perf'}">${grp}</span><div class="cf">互斥：${cfNames}</div>`;
-    d.addEventListener('click',()=>{
-      const turningOn=!d.classList.contains('on');
-      if(turningOn){
-        const conflictWith=[...grid.querySelectorAll('.obj-card.on')].map(e=>e.dataset.key).filter(ck=>CONFLICTS[k].includes(ck));
-        if(conflictWith.length){
-          toast(`「${o.name}」与「${conflictWith.map(ck=>OBJDEF[ck].name).join('、')}」相互矛盾，不能同时选择（经济性目标与性能目标互斥）。`);
-          return;
-        }
-      }
-      d.classList.toggle('on');
-    });
+    const d=document.createElement('div'); d.className='obj-card'+(k==='cost'||k==='winter'?' on':''); d.dataset.key=k;
+    const cfNames=TRADEOFFS[k].map(c=>OBJDEF[c].name).join('、');
+    d.innerHTML=`<span class="ck">✓</span><div class="nm">${o.name}</div><div class="ds">${o.desc}</div><span class="tag ${o.tag}">${o.tag==='min'?'越小越优':'越大越优'}</span><span class="grp grp-${grp==='经济性'?'eco':'perf'}">${grp}</span><div class="cf">权衡：${cfNames||'—'}</div>`;
+    d.addEventListener('click',()=>{ d.classList.toggle('on'); });
     grid.appendChild(d);
   });
   // 地区联动
