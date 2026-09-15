@@ -120,7 +120,10 @@ a{color:var(--primary);text-decoration:none}
 .obj-card .grp{display:inline-block;font-size:10px;margin-top:6px;margin-left:5px;padding:1px 7px;border-radius:10px;font-weight:600}
 .obj-card .grp-eco{background:#fef3c7;color:#b45309}
 .obj-card .grp-perf{background:#dbeafe;color:#1d4ed8}
-.obj-card .cf{font-size:10.5px;color:var(--danger);margin-top:5px;line-height:1.35}
+.obj-card .cf{font-size:10.5px;color:var(--text-2);margin-top:5px;line-height:1.35}
+.obj-card.disabled{opacity:.5;cursor:not-allowed;border-style:dashed}
+.obj-card.disabled:hover{border-color:var(--border)}
+.obj-card .grp-off{background:#f3f4f6;color:#9ca3af}
 
 /* 指标卡 */
 .stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
@@ -522,7 +525,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
     </div>
     <div class="card">
       <h3><span class="dot"></span>优化目标</h3>
-      <div class="sub">多目标优化的核心就是权衡<b>经济性</b>（成本、设备，越小越好）与<b>性能</b>（能力、连挂率、可靠性，越大越好）——它们天然矛盾，正是 Pareto 前沿要刻画的对象，可任意组合。提示：当前模型中「能力」「设备」与「成本」同向变化、仅「冬季可靠性」与之反向，故至少勾选「冬季可靠性」才能得到非单点的权衡前沿。</div>
+      <div class="sub">多目标优化的核心是权衡<b>经济性</b>（成本、设备，越小越好）与<b>性能</b>（能力、连挂率、可靠性，越大越好）。当前模型中「能力」「设备」与「成本」同向变化，<b>仅「冬季可靠性」与之反向</b>——故「冬季可靠性」必须勾选、并至少保留一个经济性/能力目标，才能得到非单点的 Pareto 前沿；「连挂率」公式退化恒为 100%，暂禁用。</div>
       <div class="obj-grid" id="obj-grid"></div>
     </div>
     <div class="card mt">
@@ -912,8 +915,8 @@ const OBJDEF = {
 };
 
 /* 目标分组：经济性（成本、设备）与性能（能力、连挂率、可靠性）。
-   多目标优化的本质就是权衡这两组目标，因此它们可以、也应当被同时选择，不再做「互斥禁止」。
-   TRADEOFFS 仅用于在卡片上提示每项目标真正与之「反向」（形成 Pareto 权衡）的目标。 */
+   多目标优化正是要权衡这两组目标；但「能否同时选」要看目标之间是否数学上共线/恒定：
+   —— 当前模型里只有「冬季可靠性」与成本/能力/设备反向（真正权衡），其余两两同向，前沿会退化单点。 */
 const OBJ_GROUP = { cost:'经济性', equipment:'经济性', capacity:'性能', coupling:'性能', winter:'性能' };
 const TRADEOFFS = {
   cost:      ['winter'],
@@ -922,6 +925,11 @@ const TRADEOFFS = {
   winter:    ['cost','capacity','equipment'],
   equipment: ['winter'],
 };
+/* 选择限制（依据共线性，而非「经济性 vs 性能」）：
+   REQUIRED —— 冬季可靠性是唯一反向目标，必须选中，否则前沿退化为单点；
+   DISABLED —— 连挂率当前恒 =100%（公式退化，待按教材重推），暂不可作为优化目标。 */
+const REQUIRED = ['winter'];
+const DISABLED = ['coupling'];
 
 /* ---------- 编码/解码（优化变量 → 纵断面） ---------- */
 /* 变量 p = [H, x1..x_{N-1}(L的占比), h1..h_{N-1}(H的占比)]，维度 2N-1 */
@@ -962,7 +970,7 @@ function makeCfg(){
   const thetaArr=new Array(N).fill(0), thetaSArr=new Array(N).fill(0);
   thetaArr[switchSeg]=thetaCurve;
 
-  const objIdx = [...document.querySelectorAll('#obj-grid .obj-card.on')].map(el=>el.dataset.key);
+  const objIdx = [...document.querySelectorAll('#obj-grid .obj-card.on')].map(el=>el.dataset.key).filter(k=>!DISABLED.includes(k));
   const wWinter = { t:tWinter, vwind:vWind, rho:rhoW, coef, nRev:nRevArr, nFwd:nFwdArr, nDia:nDiaArr, nSlip:nSlipArr, theta:thetaArr, thetaS:thetaSArr, step:2.0 };
   const wSummer = { t:27, vwind:0, rho:rhoS, coef, nRev:nRevArr, nFwd:nFwdArr, nDia:nDiaArr, nSlip:nSlipArr, theta:thetaArr, thetaS:thetaSArr, step:2.0 };
 
@@ -2387,15 +2395,29 @@ function bindEvents(){
     t.classList.add('active'); $(t.dataset.panel).classList.add('active');
     refreshVisibleCharts(t.dataset.panel);
   }));
-  // 目标卡片：允许任意组合（多目标的本质就是权衡经济性 vs 性能），默认勾选「成本 + 冬季可靠性」这对真正的权衡目标
+  // 目标卡片：默认勾选「成本 + 冬季可靠性」（真正的权衡对）。
+  // 限制依据共线性：冬季可靠性是唯一反向目标必须选中；连挂率恒=100%暂禁用。
   const grid=$('obj-grid');
   Object.keys(OBJDEF).forEach(k=>{
     const o=OBJDEF[k];
     const grp=OBJ_GROUP[k];
-    const d=document.createElement('div'); d.className='obj-card'+(k==='cost'||k==='winter'?' on':''); d.dataset.key=k;
+    const disabled=DISABLED.includes(k);
+    const d=document.createElement('div');
+    d.className='obj-card'+(k==='cost'||k==='winter'?' on':'')+(disabled?' disabled':'');
+    d.dataset.key=k;
     const cfNames=TRADEOFFS[k].map(c=>OBJDEF[c].name).join('、');
-    d.innerHTML=`<span class="ck">✓</span><div class="nm">${o.name}</div><div class="ds">${o.desc}</div><span class="tag ${o.tag}">${o.tag==='min'?'越小越优':'越大越优'}</span><span class="grp grp-${grp==='经济性'?'eco':'perf'}">${grp}</span><div class="cf">权衡：${cfNames||'—'}</div>`;
-    d.addEventListener('click',()=>{ d.classList.toggle('on'); });
+    const grpBadge=disabled?'<span class="grp grp-off">待修·恒为100%</span>':`<span class="grp grp-${grp==='经济性'?'eco':'perf'}">${grp}</span>`;
+    d.innerHTML=`<span class="ck">✓</span><div class="nm">${o.name}</div><div class="ds">${o.desc}</div><span class="tag ${o.tag}">${o.tag==='min'?'越小越优':'越大越优'}</span>${grpBadge}<div class="cf">权衡：${cfNames||'—'}</div>`;
+    d.addEventListener('click',()=>{
+      if(disabled){ toast('「安全连挂率」当前恒为 100%（公式退化），待按教材重新建模后启用。'); return; }
+      const turningOn=!d.classList.contains('on');
+      if(!turningOn){
+        if(REQUIRED.includes(k)){ toast('「冬季可靠性」是唯一与成本/能力反向的目标，取消后 Pareto 前沿会退化成单点，不能取消。'); return; }
+        const otherOn=[...grid.querySelectorAll('.obj-card.on')].filter(e=>e!==d && !REQUIRED.includes(e.dataset.key));
+        if(!otherOn.length){ toast('至少保留一个经济性/能力目标（成本/能力/设备）与「冬季可靠性」构成权衡。'); return; }
+      }
+      d.classList.toggle('on');
+    });
     grid.appendChild(d);
   });
   // 地区联动
