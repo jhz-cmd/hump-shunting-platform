@@ -470,10 +470,14 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
       </div>
       <div class="hint">道岔阻力功 E_s = 逆向·N逆 + 顺向·(N顺+N菱) + 交分·N交分；曲线阻力功 E_c = 8·θ总。默认系数取自教材/北交大参考值（逆向 24、顺向 12、菱形 12、交分 48 N·m/kN，曲线 8 N·m/kN·°），可编辑以便与规范核对。各型道岔沿溜放线全长散布（加速坡 / 中间坡 / 道岔区坡 / 打靶区均有），位置固定、不参与优化。</div>
     </div>
+  </div>
 
-    <div class="card mt">
+  <!-- ================= 2. 多目标优化 ================= -->
+  <div class="panel" id="p-optimize">
+    <div class="section-title"><span class="bar"></span>多目标自动优化引擎</div>
+    <div class="card">
       <h3><span class="dot"></span>优化设置</h3>
-      <div class="sub">配置优化算法、坡段数与种群规模；<b>优化目标在「多目标优化」标签页选择</b></div>
+      <div class="sub">配置优化算法、坡段数与种群规模；<b>优化目标在下方「优化目标」卡片选择</b></div>
       <div class="row">
         <div class="field">
           <label>坡段数量（变坡点数量）</label>
@@ -516,11 +520,6 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
         <span class="muted" id="input-status">就绪</span>
       </div>
     </div>
-  </div>
-
-  <!-- ================= 2. 多目标优化 ================= -->
-  <div class="panel" id="p-optimize">
-    <div class="section-title"><span class="bar"></span>多目标自动优化引擎（MOPSO）</div>
     <div class="card">
       <h3><span class="dot"></span>优化目标</h3>
       <div class="sub">经济性目标（成本最低、设备最少）与性能目标（解体能力、连挂率、可靠性）相互矛盾，不能同时选择；同类目标之间不互斥</div>
