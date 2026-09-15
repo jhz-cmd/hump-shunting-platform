@@ -662,7 +662,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
           <div class="legend" id="legend-risk-underreach"></div>
         </div>
         <div>
-          <div class="sub" style="font-weight:700;color:var(--text);margin-bottom:4px">② 超速率（夏季最大速度 &gt; 7 m/s）</div>
+          <div class="sub" style="font-weight:700;color:var(--text);margin-bottom:4px">② 超速率（减速器入口速度 &gt; 7 m/s）</div>
           <div class="chart-box" id="chart-risk-over"></div>
           <div class="legend" id="legend-risk-over"></div>
         </div>
@@ -970,7 +970,7 @@ function makeCfg(){
     nRev, nFwd, nDia, nSlip, thetaCurve, coef,
     wWinter, wSummer, region, tWinter, vWind,
     popSize: parseInt($('in-pop').value), iters: parseInt($('in-iter').value),
-    xRetarderI:0.35, xRetarderII:0.70, xRetarderIII:0.90, xSwitch:0.62, xTopStart:1.0,
+    xRetarderI:0.15, xRetarderII:0.70, xRetarderIII:0.90, xSwitch:0.62, xTopStart:1.0,
   };
 }
 function decode(p, cfg){
@@ -1013,15 +1013,15 @@ function evaluateProf(prof, cfg){
   // 约束1：冬季难行车溜到位（末速 ≥ 1.4 m/s）
   const vEndHard = endSpeed(simHardWinter);
   if(vEndHard < 1.4) violations.push({n:'冬季难行车溜不到位', a:1.4-vEndHard});
-  // 约束2：夏季易行车不超速（最大速度 ≤ 7.0 m/s，减速器入口限制）
-  const vMaxEasy = maxSpeed(simEasySummer);
-  if(vMaxEasy > 7.0) violations.push({n:'夏季易行车超速(>7 m/s)', a:vMaxEasy-7.0});
+  // 约束2：夏季易行车不超速（第一减速器入口速度 ≤ 7.0 m/s，减速器入口限制）
+  const vIn = speedAt(simEasySummer, cfg.xRetarderI*cfg.L);
+  const vMaxEasy = vIn;
+  if(vMaxEasy > 7.0) violations.push({n:'夏季易行车超速(减速器入口>7 m/s)', a:vMaxEasy-7.0});
 
   const pen = violations.reduce((s,x)=>s+x.a,0);
 
   // ---- 目标计算 ----
-  // ① 成本
-  const vIn = speedAt(simEasySummer, cfg.xRetarderI*cfg.L);
+  // ① 成本（vIn = 第一减速器入口速度，已在上面计算）
   const gpEasy = gPrime(VEHICLES.easy.Q, VEHICLES.easy.n);
   const Hbrake = Math.max(0, (vIn*vIn - 1.4*1.4)/(2*gpEasy));
   const alpha=0.18, mu=0.13, lSec=1.2, lSup=0.5;
@@ -1057,7 +1057,7 @@ function evaluateProf(prof, cfg){
 
 /* 最大推峰速度：二分求「夏季不超速」与「间隔」两个上限的最小值 */
 function maxPushSpeed(prof,cfg){
-  function speedOK(vp){ const s=simulate(prof,VEHICLES.easy,cfg.wSummer,vp); return maxSpeed(s)<=7.0; }
+  function speedOK(vp){ const s=simulate(prof,VEHICLES.easy,cfg.wSummer,vp); return speedAt(s,cfg.xRetarderI*cfg.L)<=7.0; }
   function switchOK(vp){ const s=simulate(prof,VEHICLES.hard,cfg.wWinter,vp); const vs=speedAt(s,cfg.xSwitch*cfg.L); return vs>=2.28*vp; }
   function bsearch(fn){ let lo=0.8, hi=2.8; if(fn(hi)) return hi; for(let k=0;k<9;k++){ const m=(lo+hi)/2; if(fn(m)) lo=m; else hi=m; } return lo; }
   const vSpeed=bsearch(speedOK);
@@ -1564,14 +1564,14 @@ function startPointDrag(e, i, c, prof, cfg, xmin, xmax, ymin, ymax, isPeak){
     const segs=segmentsOf(dragProf);
     const hard=simulate(dragProf, VEHICLES.hard, cfg.wWinter, 1.4);
     const easy=simulate(dragProf, VEHICLES.easy, cfg.wSummer, 1.9);
-    const vEnd=endSpeed(hard), vMax=maxSpeed(easy);
+    const vEnd=endSpeed(hard), vMax=speedAt(easy, cfg.xRetarderI*cfg.L);
     const wOk=vEnd>=1.4, sOk=vMax<=7.0;
     const g=segs[i]?segs[i].grade:0;
     readout.innerHTML = `<div style="font-weight:700;color:var(--text)">拖动调整纵断面</div>`
       + `<div>峰高 H <b>${fmt(dragProf[0].h,2)}</b> m</div>`
       + `<div>当前坡段坡度 <b>${fmt(g,1)}</b>‰</div>`
       + `<div class="${wOk?'ok':'bad'}">难行车末速 ${fmt(vEnd,2)} m/s ${wOk?'✓':'✗ 溜不到位'}</div>`
-      + `<div class="${sOk?'ok':'bad'}">易行车最大速度 ${fmt(vMax,2)} m/s ${sOk?'✓':'✗ 超速'}</div>`
+      + `<div class="${sOk?'ok':'bad'}">减速器入口速度 ${fmt(vMax,2)} m/s ${sOk?'✓':'✗ 超速'}</div>`
       + `<div style="color:var(--text-3);font-size:11px">松开鼠标自动重新检算</div>`;
   }
   function move(ev){
@@ -1708,7 +1708,7 @@ function renderCheckList(meta,cfg){
   items.push({nm:'打靶区坡度 0.6~1.0‰', ok:g[N-1]>=0.6&&g[N-1]<=1.0, vl:`当前 ${fmt(g[N-1],1)}‰`, warn:g[N-1]>=0&&g[N-1]<0.6});
   items.push({nm:'前陡后缓凹形纵断面', ok:g.every((v,i)=>i===0||v<=g[i-1]+0.5), vl:'坡度单调递减'});
   items.push({nm:'冬季难行车溜到位（末速≥1.4 m/s）', ok:meta.vEndHard>=1.4, vl:`末速 ${fmt(meta.vEndHard,2)} m/s`});
-  items.push({nm:'夏季易行车不超速（≤7 m/s）', ok:meta.vMaxEasy<=7.0, vl:`最大速度 ${fmt(meta.vMaxEasy,2)} m/s`});
+  items.push({nm:'夏季易行车不超速（减速器入口≤7 m/s）', ok:meta.vMaxEasy<=7.0, vl:`入口速度 ${fmt(meta.vMaxEasy,2)} m/s`});
   items.push({nm:'减速器制动能高满足安全余量', ok:true, vl:`减速器 ${meta.nSec} 节（含15%~20%余量）`, warn:false});
   const box=$('check-list'); box.innerHTML='';
   items.forEach(it=>{
@@ -2220,7 +2220,7 @@ function runTraffic(){
     const s=simulate(baseProf,veh,condS,1.9);
     if(endSpeed(w)>=1.4) reach++;
     if(endSpeed(s)<=1.4) couple++;
-    if(maxSpeed(s)>7.0) over++;
+    if(speedAt(s,cfg.xRetarderI*cfg.L)>7.0) over++;
   }
   return {reach:reach/N*100, couple:couple/N*100, over:over/N*100, weights};
 }
@@ -2251,7 +2251,7 @@ function renderTrafficCurve(){
       let Q,f; if(isEmpty){Q=clamp(25+gauss()*3.5,18,34);f=11.41;}else{Q=clamp(88+gauss()*5,70,96);f=7.71;}
       const veh={Q,f,n:4};
       const w=simulate(baseProf,veh,cfg.wWinter,1.4), s=simulate(baseProf,veh,cfg.wSummer,1.9);
-      if(endSpeed(w)>=1.4)r++; if(endSpeed(s)<=1.4)cpl++; if(maxSpeed(s)>7)ov++;
+      if(endSpeed(w)>=1.4)r++; if(endSpeed(s)<=1.4)cpl++; if(speedAt(s,cfg.xRetarderI*cfg.L)>7)ov++;
     }
     xs.push(pe); reach.push(r/N*100); couple.push(cpl/N*100); over.push(ov/N*100);
   });
@@ -2300,8 +2300,8 @@ function renderTrafficRisk(){
       const veh={Q,f,n:4};
       const wA=simulate(profA,veh,cfg.wWinter,1.4), sA=simulate(profA,veh,cfg.wSummer,1.9);
       const wB=simulate(profB,veh,cfg.wWinter,1.4), sB=simulate(profB,veh,cfg.wSummer,1.9);
-      const ua_=endSpeed(wA)<1.4, oa_=maxSpeed(sA)>7.0;
-      const ub_=endSpeed(wB)<1.4, ob_=maxSpeed(sB)>7.0;
+      const ua_=endSpeed(wA)<1.4, oa_=speedAt(sA,cfg.xRetarderI*cfg.L)>7.0;
+      const ub_=endSpeed(wB)<1.4, ob_=speedAt(sB,cfg.xRetarderI*cfg.L)>7.0;
       if(ua_)ua++; if(ub_)ub++; if(oa_)oa++; if(ob_)ob++;
       if(ua_||oa_)fa++; if(ub_||ob_)fb++;
     }
@@ -2330,7 +2330,7 @@ function renderTrafficRisk(){
     $('legend-risk-underreach').innerHTML=`<span class="li"><span class="sw" style="background:${CA}"></span>${nameA}</span><span class="li"><span class="sw" style="background:${CB}"></span>${nameB}</span><span class="li"><span class="sw" style="background:#f59e0b"></span>当前空车比例 ${curPe}%</span>`;
   })();
 
-  // 图② 超速率（夏季最大速度 > 7 m/s）
+  // 图② 超速率（减速器入口速度 > 7 m/s）
   (function(){
     const c=makeChart('chart-risk-over',{ml:62});
     c.grid(0,80,0,100);
