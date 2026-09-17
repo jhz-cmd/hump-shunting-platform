@@ -576,7 +576,11 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
     <div class="grid cols-2 mt">
       <div class="card">
         <h3><span class="dot"></span>Pareto 前沿（目标空间）</h3>
-        <div class="sub">横轴=目标①（越小越优）· 纵轴=目标②（越大越优）· 点击散点切换方案</div>
+        <div class="sub" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+          <span>横轴</span><select class="sel" id="pareto-x" style="width:auto"></select>
+          <span>纵轴</span><select class="sel" id="pareto-y" style="width:auto"></select>
+          <span class="muted">点击散点切换方案</span>
+        </div>
         <div class="chart-box" id="chart-pareto"></div>
         <div class="legend" id="legend-pareto"></div>
       </div>
@@ -1637,12 +1641,27 @@ const state={ cfg:null, archive:[], selected:null, iterHistory:[], running:false
 
 function renderPareto(){
   const cfg=state.cfg;
-  const box=$('chart-pareto'); const c=makeChart('chart-pareto');
+  const c=makeChart('chart-pareto');
   const lg=$('legend-pareto'); lg.innerHTML='';
   if(!state.archive.length){ c.text(c.W/2,c.H/2,'尚无 Pareto 解，请先运行优化',{color:'#9ca3af'}); return; }
   const objIdx=cfg.objIdx;
-  const o1=objIdx[0], o2=objIdx.length>1?objIdx[1]:objIdx[0];
-  const dirs=[OBJDEF[o1].dir, OBJDEF[o2].dir];
+  // 目标对选择：X/Y 下拉可切换要展示的两个目标。默认取「首目标 vs 末目标」——
+  // 三个目标（成本/能力/冬季可靠性）时首末即「成本 vs 冬季」这一真冲突对，
+  // 避免「成本 vs 能力」（两者在可行区都倾向低峰高、同向）使散点塌缩成单点。
+  const selX=$('pareto-x'), selY=$('pareto-y');
+  if(selX && selY){
+    const curKeys=objIdx.join('|');
+    if(selX.dataset.keys!==curKeys){
+      selX.dataset.keys=curKeys;
+      selX.innerHTML=objIdx.map((o,i)=>`<option value="${o}"${i===0?' selected':''}>${esc(OBJDEF[o].name)}</option>`).join('');
+      selY.innerHTML=objIdx.map((o,i)=>`<option value="${o}"${i===objIdx.length-1?' selected':''}>${esc(OBJDEF[o].name)}</option>`).join('');
+    }
+    var o1=selX.value, o2=selY.value;
+    if(!o1) o1=objIdx[0];
+    if(!o2||o2===o1) o2=objIdx[objIdx.length-1]||objIdx[0];
+  } else {
+    var o1=objIdx[0], o2=objIdx.length>1?objIdx[objIdx.length-1]:objIdx[0];
+  }
   const raw=state.archive.map(s=>({...s, r1:s.meta[o1], r2:s.meta[o2]}));
   let xmin=Math.min(...raw.map(d=>d.r1)), xmax=Math.max(...raw.map(d=>d.r1));
   let ymin=Math.min(...raw.map(d=>d.r2)), ymax=Math.max(...raw.map(d=>d.r2));
@@ -1654,7 +1673,7 @@ function renderPareto(){
   const padX=(xmax-xmin)*0.08||1, padY=(ymax-ymin)*0.1||1;
   xmin-=padX;xmax+=padX;ymin-=padY;ymax+=padY;
   c.grid(xmin,xmax,ymin,ymax);
-  c.axes(xmin,xmax,ymin,ymax, v=>fmt(v,0), v=>fmt(v,1), `目标①：${OBJDEF[o1].name}`, `目标②：${OBJDEF[o2].name}`);
+  c.axes(xmin,xmax,ymin,ymax, v=>fmt(v,0), v=>fmt(v,1), OBJDEF[o1].name, OBJDEF[o2].name);
   c.scatter(raw.map(d=>[d.r1,d.r2]),xmin,xmax,ymin,ymax,'#2563eb',5,(d,i)=>{ selectSolution(state.archive[i]); });
   if(base && base.meta){
     c.scatter([[base.meta[o1],base.meta[o2]]],xmin,xmax,ymin,ymax,'#f59e0b',8);
@@ -1666,7 +1685,6 @@ function renderPareto(){
   }
   c.text(c.W/2, 13, 'Pareto 前沿（目标空间）', {color:'#6b7280',size:11.5});
   lg.innerHTML=`<span class="li"><span class="sw" style="background:#2563eb"></span>Pareto 非支配解</span><span class="li"><span class="sw" style="background:#dc2626"></span>当前选中方案</span>`+(base&&base.meta?`<span class="li"><span class="sw" style="background:#f59e0b"></span>教材基准</span>`:'');
-  function ml(cc){ return 46; }
 }
 
 function renderConvergence(){
@@ -2677,6 +2695,9 @@ function bindEvents(){
   };
   $('btn-run2').addEventListener('click',run);
   $('btn-stop').addEventListener('click',()=>{ STOP=true; $('btn-run2').disabled=false; $('opt-status').textContent='已停止'; });
+  // Pareto 目标空间：X/Y 轴目标切换
+  if($('pareto-x')) $('pareto-x').addEventListener('change',renderPareto);
+  if($('pareto-y')) $('pareto-y').addEventListener('change',renderPareto);
   // 方案切换：重算该方案的纵断面图、统计卡、坡段表与检算报告
   $('profile-select').addEventListener('change',()=>{
     renderProfilePanel();   // 更新纵断面图 + 统计卡 + 坡段表 + 来源，并保留当前选中方案
