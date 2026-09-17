@@ -333,8 +333,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
     <div class="tab" data-panel="p-profile"><span class="num">3</span>纵断面方案</div>
     <div class="tab" data-panel="p-traffic"><span class="num">4</span>车流适应性</div>
     <div class="tab" data-panel="p-check"><span class="num">5</span>检算报告</div>
-    <div class="tab" data-panel="p-example"><span class="num">6</span>教材实例</div>
-    <div class="tab" data-panel="p-history"><span class="num">7</span>结果存档</div>
+    <div class="tab" data-panel="p-history"><span class="num">6</span>结果存档</div>
   </div>
 
   <!-- ================= 1. 设计输入 ================= -->
@@ -525,6 +524,36 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
       </div>
     </div>
     <div class="card">
+      <h3><span class="dot"></span>教材基准方案 · 华北 16 线 4 段坡（能高法算例）</h3>
+      <div class="sub">教材《铁路站场及枢纽》4-1 节标准算例：峰高 <b>4.313m</b>、坡度 <b>48/18/2.5/1.0‰</b>、段长占比 <b>12/24/42/22%</b>，对应「难行车·冬季」溜放能高线计算。以此为<b>基准初始方案</b>，在下方「优化目标」勾选不同组合并「开始优化」，即可观察 Pareto 前沿相对该基准的改进。</div>
+      <div class="toolbar">
+        <button class="btn" id="btn-load-example">载入教材基准为初始方案</button>
+        <span class="muted" id="example-status"></span>
+      </div>
+      <div id="example-objs" class="mt"></div>
+      <div class="grid cols-2 mt">
+        <div>
+          <h4>能高线（四条线）</h4>
+          <div class="chart-box" id="chart-example-energy"></div>
+          <div class="legend" id="legend-example-energy"></div>
+        </div>
+        <div>
+          <h4>阻力能高分解（含教材公式）</h4>
+          <div id="example-breakdown"></div>
+        </div>
+      </div>
+      <div class="grid cols-2 mt">
+        <div>
+          <h4>各坡段折算坡度</h4>
+          <div id="example-grades"></div>
+        </div>
+        <div>
+          <h4>计算结果</h4>
+          <div id="example-results"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card mt">
       <h3><span class="dot"></span>优化目标</h3>
       <div class="sub">多目标优化的核心是权衡<b>经济性</b>（成本、设备，越小越好）与<b>性能</b>（能力、连挂率、可靠性，越大越好）。当前模型中「能力」「设备」与「成本」同向变化，<b>仅「冬季可靠性」与之反向</b>——故「冬季可靠性」必须勾选、并至少保留一个经济性/能力目标，才能得到非单点的 Pareto 前沿；「连挂率」公式退化恒为 100%，暂禁用。</div>
       <div class="obj-grid" id="obj-grid"></div>
@@ -703,44 +732,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
     </div>
   </div>
 
-  <!-- ================= 6. 教材实例 ================= -->
-  <div class="panel" id="p-example">
-    <div class="section-title"><span class="bar"></span>教材实例 · 能高线计算示例</div>
-    <div class="sub">参照 switchyard.top/hump 的四条能高线画法，以一个<b>固定规范示例</b>（华北 · 16 线 · 4 段坡）演示「难行车·冬季」自由溜放的能高线与阻力能高分解，供对照教材公式理解计算过程。示例参数固定，不随上方设计输入改变。</div>
-
-    <div class="card">
-      <h3><span class="dot"></span>示例条件（固定）</h3>
-      <div id="example-params"></div>
-    </div>
-
-    <div class="grid cols-2 mt">
-      <div class="card">
-        <h3><span class="dot"></span>能高线（四条线）</h3>
-        <div class="sub">初始动能高线（横向基准）/ 阻力能高线（累计）/ 动能高线 / 制动能高线（冬季自由溜放=0）</div>
-        <div class="chart-box" id="chart-example-energy"></div>
-        <div class="legend" id="legend-example-energy"></div>
-      </div>
-      <div class="card">
-        <h3><span class="dot"></span>阻力能高分解（含公式）</h3>
-        <div class="sub">各分量数值与教材公式对照（能高法 4-1-20）</div>
-        <div id="example-breakdown"></div>
-      </div>
-    </div>
-
-    <div class="grid cols-2 mt">
-      <div class="card">
-        <h3><span class="dot"></span>各坡段折算坡度</h3>
-        <div class="sub">i′ = i − (E_s + E_c)/Δl：道岔/曲线阻力功折算为坡度降低</div>
-        <div id="example-grades"></div>
-      </div>
-      <div class="card">
-        <h3><span class="dot"></span>计算结果</h3>
-        <div id="example-results"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= 7. 结果存档 ================= -->
+  <!-- ================= 6. 结果存档 ================= -->
   <div class="panel" id="p-history">
     <div class="section-title"><span class="bar"></span>结果存档</div>
     <div class="card">
@@ -1668,17 +1660,26 @@ function renderPareto(){
   const raw=state.archive.map(s=>({...s, r1:s.meta[o1], r2:s.meta[o2]}));
   let xmin=Math.min(...raw.map(d=>d.r1)), xmax=Math.max(...raw.map(d=>d.r1));
   let ymin=Math.min(...raw.map(d=>d.r2)), ymax=Math.max(...raw.map(d=>d.r2));
+  const base=state.exampleBaseline;              // 教材基准锚点（橙色，对比基准）
+  if(base && base.meta){
+    xmin=Math.min(xmin,base.meta[o1]); xmax=Math.max(xmax,base.meta[o1]);
+    ymin=Math.min(ymin,base.meta[o2]); ymax=Math.max(ymax,base.meta[o2]);
+  }
   const padX=(xmax-xmin)*0.08||1, padY=(ymax-ymin)*0.1||1;
   xmin-=padX;xmax+=padX;ymin-=padY;ymax+=padY;
   c.grid(xmin,xmax,ymin,ymax);
   c.axes(xmin,xmax,ymin,ymax, v=>fmt(v,0), v=>fmt(v,1), `目标①：${OBJDEF[o1].name}`, `目标②：${OBJDEF[o2].name}`);
   c.scatter(raw.map(d=>[d.r1,d.r2]),xmin,xmax,ymin,ymax,'#2563eb',5,(d,i)=>{ selectSolution(state.archive[i]); });
+  if(base && base.meta){
+    c.scatter([[base.meta[o1],base.meta[o2]]],xmin,xmax,ymin,ymax,'#f59e0b',8);
+    c.text(c.x(base.meta[o1],xmin,xmax), c.y(base.meta[o2],ymin,ymax)-12, '教材基准', {color:'#b45309',size:10,weight:'700'});
+  }
   // 高亮选中
   if(state.selected && state.selected.meta){
     const s=state.selected; c.scatter([[s.meta[o1],s.meta[o2]]],xmin,xmax,ymin,ymax,'#dc2626',7);
   }
   c.text(c.W/2, 13, 'Pareto 前沿（目标空间）', {color:'#6b7280',size:11.5});
-  lg.innerHTML=`<span class="li"><span class="sw" style="background:#2563eb"></span>Pareto 非支配解</span><span class="li"><span class="sw" style="background:#dc2626"></span>当前选中方案</span>`;
+  lg.innerHTML=`<span class="li"><span class="sw" style="background:#2563eb"></span>Pareto 非支配解</span><span class="li"><span class="sw" style="background:#dc2626"></span>当前选中方案</span>`+(base&&base.meta?`<span class="li"><span class="sw" style="background:#f59e0b"></span>教材基准</span>`:'');
   function ml(cc){ return 46; }
 }
 
@@ -1916,8 +1917,22 @@ function exampleCfg(){
   prof[prof.length-1]={x:L,h:0};
   return {L,N,tp,cond,fracs,grades,H,prof};
 }
-function renderExample(){
+/* 教材基准的完整目标值（固定华北 16 线 N=4，不随设计输入变化）：构造最小 cfg 复用 evaluateProf */
+function exampleEval(){
   const ex=exampleCfg();
+  const cfg={
+    N:ex.N, L:ex.L, objIdx:['cost','winter'],
+    wWinter:ex.cond,
+    wSummer:{ t:27, vwind:0, rho:airDensity(27), coef:ex.cond.coef,
+      nRev:ex.cond.nRev, nFwd:ex.cond.nFwd, nDia:ex.cond.nDia, nSlip:ex.cond.nSlip,
+      theta:ex.cond.theta, thetaS:ex.cond.thetaS, step:2.0 },
+    xRetarderI:0.15, xRetarderII:0.70, xRetarderIII:0.90, xSwitch:0.62,
+  };
+  return { ex, r: evaluateProf(ex.prof, cfg) };
+}
+function renderExample(){
+  const { ex, r } = exampleEval();
+  const meta=r.meta;
   const veh=VEHICLES.hard, vpush=1.4;
   const ea=energyAnalysis(ex.prof, veh, ex.cond, vpush);
   const last=ea[ea.length-1];
@@ -1927,19 +1942,15 @@ function renderExample(){
   const sigma=sigmaBase(veh.Q, ex.cond.t);
   const f=v=>fmt(v,3);
 
-  // 1) 示例条件（固定参数卡片）
-  $('example-params').innerHTML=`
+  // 1) 教材基准的 5 个目标值（固定华北 16 线 N=4 算例）
+  $('example-objs').innerHTML=`
     <div class="grid cols-4">
-      <div class="stat blue"><span class="bar-inline"></span><div class="k">峰高 H</div><div class="v">${fmt(ex.H,3)}<small>m</small></div></div>
-      <div class="stat blue"><span class="bar-inline"></span><div class="k">溜放部分长 L</div><div class="v">${ex.L}<small>m</small></div></div>
-      <div class="stat green"><span class="bar-inline"></span><div class="k">难行车（冬季基准）</div><div class="v">${veh.Q}<small>t · f=${veh.f}m² · ${veh.n}轴</small></div></div>
-      <div class="stat violet"><span class="bar-inline"></span><div class="k">推峰速度 v推</div><div class="v">${vpush}<small>m/s</small></div></div>
-      <div class="stat amber"><span class="bar-inline"></span><div class="k">冬季气温 t</div><div class="v">${ex.cond.t}<small>℃ · 逆风 ${ex.cond.vwind}m/s</small></div></div>
-      <div class="stat teal"><span class="bar-inline"></span><div class="k">g′ = g/(1+0.42n/Q)</div><div class="v">${fmt(gp,3)}<small>m/s²</small></div></div>
-      <div class="stat teal"><span class="bar-inline"></span><div class="k">空气密度 ρ</div><div class="v">${fmt(ex.cond.rho,5)}<small>kg·s²/m⁴</small></div></div>
-      <div class="stat amber"><span class="bar-inline"></span><div class="k">离散度 σ（难行车）</div><div class="v">${fmt(sigma,3)}<small>N/kN</small></div></div>
+      <div class="stat blue"><span class="bar-inline"></span><div class="k">工程总成本 · 越小越优</div><div class="v">${fmt(meta.cost,0)}<small>万元</small></div></div>
+      <div class="stat violet"><span class="bar-inline"></span><div class="k">解体能力 · 越大越优</div><div class="v">${fmt(meta.capacity,2)}<small>m/s</small></div></div>
+      <div class="stat green"><span class="bar-inline"></span><div class="k">冬季可靠性 · 越大越优</div><div class="v">${fmt(meta.winterRel,2)}<small>倍</small></div></div>
+      <div class="stat teal"><span class="bar-inline"></span><div class="k">设备数量 · 越小越优</div><div class="v">${meta.equipment}<small>台</small></div></div>
     </div>
-    <div class="hint" style="margin-top:10px">逆向道岔 <b>${ex.tp.nRev}</b> 组 · 顺向 <b>${ex.tp.nFwd}</b> 组 · 菱形 <b>${ex.tp.nDia}</b> 组 · 交分 <b>${ex.tp.nSlip}</b> 组 · 曲线总转角 <b>${ex.tp.curveDeg}°</b>（16 线小能力驼峰自动推算）</div>`;
+    <div class="hint" style="margin-top:10px">峰高 H=<b>${fmt(ex.H,3)}m</b> · 溜放长 L=${ex.L}m · 难行车 ${veh.Q}t（f=${veh.f}m²，${veh.n}轴）· 推峰 ${vpush}m/s · 冬季 t=${ex.cond.t}℃、逆风 ${ex.cond.vwind}m/s · g′=${fmt(gp,3)} · 离散度 σ=${fmt(sigma,3)} · 安全连挂率 ${fmt(meta.coupling,1)}%。逆向道岔 ${ex.tp.nRev} 组·顺向 ${ex.tp.nFwd} 组·菱形 ${ex.tp.nDia} 组·交分 ${ex.tp.nSlip} 组·曲线总转角 ${ex.tp.curveDeg}°。</div>`;
 
   // 2) 能高线图（四条线画法，复刻 switchyard.top/hump）
   const c=makeChart('chart-example-energy');
@@ -2549,6 +2560,21 @@ function regenInitial(){
   $('input-status').textContent='已按当前输入生成初始方案（峰高 '+fmt(prof[0].h,2)+' m）';
 }
 
+/* 把设计输入重置为教材基准算例（华北 · 16 线 · 4 段坡 · 380m）的默认参数 */
+function loadExampleInputs(){
+  const set=(id,v)=>{ const el=$(id); if(el){ el.value=v; } };
+  set('in-lines','16'); set('in-daily','2000'); set('in-machines','2');
+  set('in-region','华北'); set('in-twinter','-10'); set('in-vwind','4');
+  set('in-empty','30'); set('in-heavy','70'); set('in-peak','1.3');
+  set('in-hmax','5.5'); set('in-hmin','4.0'); set('in-length','380'); set('in-segments','4');
+  set('in-nrev','6'); set('in-nfwd','2'); set('in-ndia','1'); set('in-nslip','1');
+  set('in-crev','24'); set('in-cfwd','12'); set('in-cdia','12'); set('in-cslip','48'); set('in-ccurve','8');
+  ['in-twinter','in-vwind','in-hmax','in-hmin','in-length'].forEach(id=>{ const el=$(id); if(el) updateRangeLabel(el); });
+  // 空重比例与车流滑块联动同步
+  const e=parseInt($('in-empty').value)||0; $('in-heavy').value=100-e;
+  const te=$('traffic-empty'); if(te){ te.value=e; const tv=$('traffic-empty-val'); if(tv) tv.textContent=e+'%'; }
+}
+
 /* ---------- 事件绑定 ---------- */
 function bindEvents(){
   bindRanges();
@@ -2616,6 +2642,20 @@ function bindEvents(){
     saveCurrent('初始方案（一键生成）','initial');
     switchTab('p-profile');
   });
+  // 载入教材基准：重置输入为教材算例 → 生成基准方案 → 作为 Pareto 锚点
+  $('btn-load-example').addEventListener('click',()=>{
+    loadExampleInputs();
+    state.cfg=makeCfg();
+    const prof=defaultProfile(state.cfg);               // 华北 N=4 → 教材基准纵断面
+    const m=evaluate(defaultVec(state.cfg),state.cfg);
+    state.archive=[{x:defaultVec(state.cfg),obj:m.obj,prof,segs:m.segs,grades:m.grades,meta:m.meta,viol:m.violations,pen:m.penalty,label:'教材基准方案（华北16线N=4）'}];
+    state.selected=state.archive[0];
+    state.exampleBaseline={prof, meta:m.meta};
+    renderProfilePanel(); syncSelected(); renderParetoTable(); renderPareto();
+    $('example-status').textContent='已载入教材基准：成本 '+fmt(m.meta.cost,0)+'万 · 能力 '+fmt(m.meta.capacity,2)+' m/s · 冬季可靠性 '+fmt(m.meta.winterRel,2)+' 倍';
+    saveCurrent('教材基准方案（华北16线N=4）','example');
+    toast('已载入教材基准方案为初始方案');
+  });
   // 优化
   const run=()=>{
     const cfg=makeCfg();
@@ -2681,7 +2721,7 @@ function bindEvents(){
 }
 /* 切到某标签页时按真实容器宽度重绘对应图表 */
 function refreshVisibleCharts(panelId){
-  if(panelId==='p-example'){ renderExample(); return; }   // 教材实例自包含，无需优化状态
+  if(panelId==='p-optimize') renderExample();   // 教材基准卡片自包含，无需优化状态
   if(!state.cfg) return;
   if(panelId==='p-optimize'){ if(state.archive.length){ renderPareto(); renderConvergence(); } }
   else if(panelId==='p-profile'){ if(state.selected) renderProfileDetail(state.selected, state.cfg); }
