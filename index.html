@@ -1857,7 +1857,6 @@ function renderEnergy(s, cfg){
 function renderEnergyBreakdown(ea, s, cfg, veh, vpush){
   const last=ea[ea.length-1];
   const gp=gPrime(veh.Q, veh.n);
-  const Es=last.sw*1000, Ec=last.curve*1000;
   const f3=v=>fmt(v,3);
   const vEnd=Math.sqrt(2*gp*Math.max(0,last.kin));
   const gpEasy=gPrime(VEHICLES.easy.Q, VEHICLES.easy.n);
@@ -1925,7 +1924,6 @@ function renderExample(){
   const gp=gPrime(veh.Q, veh.n);
   const vEnd=Math.sqrt(2*gp*Math.max(0,last.kin));
   const vMax=Math.max(...ea.map(p=>p.kin));
-  const sigma=sigmaBase(veh.Q, ex.cond.t);
   const f=v=>fmt(v,3);
 
   // 1) 教材基准的 3 个目标值（固定华北 16 线 N=4 算例）
