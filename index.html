@@ -416,7 +416,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
             <input class="inp" id="in-peak" type="number" value="1.3" min="1" max="2" step="0.1">
           </div>
         </div>
-        <div class="hint">空车 → 冬季难行车（易溜不到位）；重车 → 夏季易行车（易超速），空重比改变将直接改变推峰速度与制动等级策略。<b>高峰小时系数</b> = 高峰小时解体量 ÷ 平均小时解体量（即高峰时段比全天平均忙多少倍），用于把高峰小时能力折算成日解体能力：日能力 = 高峰小时能力 × 24 ÷ 高峰小时系数（一般取 1.2～1.5）。</div>
+        <div class="hint">空车 → 冬季难行车（易溜不到位）；重车 → 夏季易行车（易超速），空重比改变将直接改变推峰速度与制动等级策略。<b>高峰小时系数</b>反映高峰时段比全天平均忙多少倍，用于把高峰小时能力折算成日解体能力（一般取 1.2～1.5）。</div>
       </div>
 
       <div class="card">
@@ -471,7 +471,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
         <div class="legend" id="legend-plan"></div>
         <div id="plan-summary"></div>
       </div>
-      <div class="hint">道岔阻力功 E_s = 逆向·N逆 + 顺向·(N顺+N菱) + 交分·N交分；曲线阻力功 E_c = 8·θ总。默认系数取自教材/北交大参考值（逆向 24、顺向 12、菱形 12、交分 48 N·m/kN，曲线 8 N·m/kN·°），可编辑以便与规范核对。各型道岔沿溜放线全长散布（加速坡 / 中间坡 / 道岔区坡 / 打靶区均有），位置固定、不参与优化。</div>
+      <div class="hint">道岔与曲线的阻力系数默认取自教材/北交大参考值（逆向 24、顺向 12、菱形 12、交分 48 N·m/kN，曲线 8 N·m/kN·°），可编辑以便与规范核对。各型道岔沿溜放线全长散布（加速坡 / 中间坡 / 道岔区坡 / 打靶区均有），位置固定、不参与优化。</div>
     </div>
   </div>
 
@@ -538,7 +538,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
           <div class="legend" id="legend-example-energy"></div>
         </div>
         <div>
-          <h4>阻力能高分解（含教材公式）</h4>
+          <h4>阻力能高分解</h4>
           <div id="example-breakdown"></div>
         </div>
       </div>
@@ -555,7 +555,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
     </div>
     <div class="card mt">
       <h3><span class="dot"></span>优化目标</h3>
-      <div class="sub">多目标优化的核心是权衡<b>经济性</b>（成本、设备，越小越好）与<b>性能</b>（能力、连挂率、可靠性，越大越好）。当前模型中「能力」「设备」与「成本」同向变化，<b>仅「冬季可靠性」与之反向</b>——故「冬季可靠性」必须勾选、并至少保留一个经济性/能力目标，才能得到非单点的 Pareto 前沿；「连挂率」公式退化恒为 100%，暂禁用。</div>
+      <div class="sub">三个目标依据教材 4-2 节与知网文献确立、两两冲突：峰高越低成本越低，但推峰速度与冬季溜放可靠性会随之下降。可自由勾选任意组合——目标相互矛盾时，优化将输出「平衡两者、尽可能满足一方」的 Pareto 前沿（多样化解集）。</div>
       <div class="obj-grid" id="obj-grid"></div>
     </div>
     <div class="card mt">
@@ -800,7 +800,7 @@ function baseResistance(veh,t,v){
   const Q=veh.Q, sgn=veh.sigma||0;
   return 2.439 + (0.00008*Q - 0.01743)*t - 0.015*Q + 0.00017*t*t + 0.1*v + sgn*1.65*sigmaBase(Q,t) + 0.39;
 }
-/* 单位风阻力（4-1-8，正面逆风取 +） */
+/* 单位风阻力（4-1-8，正面逆风取 +）：r_w = ρ·f·(v+v风)²/(2Q) */
 function windResistance(Q,f,v,vwind,rho){
   return rho*f*Math.pow(v + vwind, 2)/(2*Q);
 }
@@ -935,31 +935,17 @@ function distributeCount(n, N){
   return arr;
 }
 
-/* ---------- 优化目标定义 ---------- */
+/* ---------- 优化目标定义 ----------
+   目标集依据知网文献（张春民《自动化驼峰纵断面优化设计研究》2011 等）与教材 4-2 节：
+   峰高(成本)最小、推峰速度(能力)最大、难行车溜放(冬季可靠性)最大 —— 三者两两冲突，
+   可自由勾选任意组合；冲突时 NSGA-II/MOPSO/ALNS 输出 Pareto 前沿（多样化解集）。
+   注：安全连挂率教材仅给出「安全连挂速度 1.4 m/s」的定义、无量化公式，故不作优化目标，
+   由「车流适应性」页蒙特卡洛统计；减速器/减速顶数量已计入成本 costRet/costTop。 */
 const OBJDEF = {
-  cost:      { name:'工程总成本最低',        dir:'min', unit:'万元',   tag:'min', desc:'土石方 + 减速器 + 减速顶，总投资估算' },
-  capacity:  { name:'解体能力最大',          dir:'max', unit:'m/s',    tag:'max', desc:'最大允许推峰速度（受夏季限速与间隔控制）' },
-  coupling:  { name:'安全连挂率最高',        dir:'max', unit:'%',      tag:'max', desc:'以 ≤1.4 m/s 安全连挂的车辆占比' },
-  winter:    { name:'冬季溜放可靠性最高',    dir:'max', unit:'倍',     tag:'max', desc:'难行车冬季末速 / 1.4 的安全裕量' },
-  equipment: { name:'减速器/减速顶数量最少', dir:'min', unit:'台',     tag:'min', desc:'减速器节数 + 减速顶数量' },
+  cost:      { name:'工程总成本最低',        dir:'min', unit:'万元', tag:'min', desc:'土石方 + 减速器 + 减速顶，总投资估算' },
+  capacity:  { name:'解体能力最大',          dir:'max', unit:'m/s', tag:'max', desc:'最大允许推峰速度（受夏季限速与间隔控制）' },
+  winter:    { name:'冬季溜放可靠性最高',    dir:'max', unit:'倍',  tag:'max', desc:'难行车冬季末速 / 1.4 的安全裕量' },
 };
-
-/* 目标分组：经济性（成本、设备）与性能（能力、连挂率、可靠性）。
-   多目标优化正是要权衡这两组目标；但「能否同时选」要看目标之间是否数学上共线/恒定：
-   —— 当前模型里只有「冬季可靠性」与成本/能力/设备反向（真正权衡），其余两两同向，前沿会退化单点。 */
-const OBJ_GROUP = { cost:'经济性', equipment:'经济性', capacity:'性能', coupling:'性能', winter:'性能' };
-const TRADEOFFS = {
-  cost:      ['winter'],
-  capacity:  ['winter'],
-  coupling:  [],
-  winter:    ['cost','capacity','equipment'],
-  equipment: ['winter'],
-};
-/* 选择限制（依据共线性，而非「经济性 vs 性能」）：
-   REQUIRED —— 冬季可靠性是唯一反向目标，必须选中，否则前沿退化为单点；
-   DISABLED —— 连挂率当前恒 =100%（公式退化，待按教材重推），暂不可作为优化目标。 */
-const REQUIRED = ['winter'];
-const DISABLED = ['coupling'];
 
 /* ---------- 编码/解码（优化变量 → 纵断面） ---------- */
 /* 变量 p = [H, x1..x_{N-1}(L的占比), h1..h_{N-1}(H的占比)]，维度 2N-1 */
@@ -1000,7 +986,7 @@ function makeCfg(){
   const thetaArr=new Array(N).fill(0), thetaSArr=new Array(N).fill(0);
   thetaArr[switchSeg]=thetaCurve;
 
-  const objIdx = [...document.querySelectorAll('#obj-grid .obj-card.on')].map(el=>el.dataset.key).filter(k=>!DISABLED.includes(k));
+  const objIdx = [...document.querySelectorAll('#obj-grid .obj-card.on')].map(el=>el.dataset.key);
   const wWinter = { t:tWinter, vwind:vWind, rho:rhoW, coef, nRev:nRevArr, nFwd:nFwdArr, nDia:nDiaArr, nSlip:nSlipArr, theta:thetaArr, thetaS:thetaSArr, step:2.0 };
   const wSummer = { t:27, vwind:0, rho:rhoS, coef, nRev:nRevArr, nFwd:nFwdArr, nDia:nDiaArr, nSlip:nSlipArr, theta:thetaArr, thetaS:thetaSArr, step:2.0 };
 
@@ -1858,7 +1844,7 @@ function renderEnergy(s, cfg){
   c.line(ea.map(p=>[p.x,p.res]),0,L,0,ymax,'#dc2626',2);    // 阻力能高线（累计）
   c.line(ea.map(p=>[p.x,p.kin]),0,L,0,ymax,'#16a34a',2);    // 动能高线
   c.line(ea.map(p=>[p.x,0]),0,L,0,ymax,'#7c3aed',1.6,'4 3');// 制动能高线（冬季自由溜放=0）
-  c.text(c.x(L*0.98,0,L), c.y(hv0,0,ymax)-4, `初始动能高线 h推=${fmt(vpush*vpush/(2*gPrime(veh.Q,veh.n)),3)}m`, {color:'#9ca3af',size:10,anchor:'end'});
+  c.text(c.x(L*0.98,0,L), c.y(hv0,0,ymax)-4, `初始动能高线 ${fmt(vpush*vpush/(2*gPrime(veh.Q,veh.n)),3)}m`, {color:'#9ca3af',size:10,anchor:'end'});
   c.text(c.W/2,13,'能高线（难行车·冬季 自由溜放）',{color:'#6b7280',size:11});
   addLineHover(c,'chart-energy',0,L,0,ymax,
     [{name:'阻力能高线',color:'#dc2626',pts:ea.map(p=>[p.x,p.res]),fmt:v=>fmt(v,3)+' m'},
@@ -1880,19 +1866,19 @@ function renderEnergyBreakdown(ea, s, cfg, veh, vpush){
   const box=$('energy-breakdown');
   box.innerHTML=`
     <table>
-      <thead><tr><th>阻力能高分量</th><th style="text-align:right">数值(m)</th><th>说明 / 公式</th></tr></thead>
+      <thead><tr><th>阻力能高分量</th><th style="text-align:right">数值(m)</th><th>说明</th></tr></thead>
       <tbody>
-        <tr><td>基本阻力能高 h₀</td><td class="num" style="text-align:right">${f3(last.base)}</td><td>r₀·L/1000（滚动轴承+空气阻力）</td></tr>
-        <tr><td>风阻力能高 h_w</td><td class="num" style="text-align:right">${f3(last.wind)}</td><td>r_w·L/1000（正面逆风）</td></tr>
-        <tr><td>道岔阻力能高 h_s</td><td class="num" style="text-align:right">${f3(last.sw)}</td><td>E_s/1000 = [c逆N逆+c顺(N顺+N菱)+c交N交]/1000</td></tr>
-        <tr><td>曲线阻力能高 h_c</td><td class="num" style="text-align:right">${f3(last.curve)}</td><td>E_c/1000 = 8·θ总/1000</td></tr>
-        <tr><td><b>阻力能高合计</b></td><td class="num" style="text-align:right"><b>${f3(last.res)}</b></td><td>h₀ + h_w + h_s + h_c</td></tr>
+        <tr><td>基本阻力能高</td><td class="num" style="text-align:right">${f3(last.base)}</td><td>基本阻力沿程累积（滚动轴承 + 空气阻力）</td></tr>
+        <tr><td>风阻力能高</td><td class="num" style="text-align:right">${f3(last.wind)}</td><td>逆风阻力沿程累积</td></tr>
+        <tr><td>道岔阻力能高</td><td class="num" style="text-align:right">${f3(last.sw)}</td><td>逆向 / 顺向 / 菱形 / 交分道岔阻力</td></tr>
+        <tr><td>曲线阻力能高</td><td class="num" style="text-align:right">${f3(last.curve)}</td><td>曲线总转角阻力</td></tr>
+        <tr><td><b>阻力能高合计</b></td><td class="num" style="text-align:right"><b>${f3(last.res)}</b></td><td>四项阻力分量之和</td></tr>
         <tr><td>总能高（末点）</td><td class="num" style="text-align:right">${f3(last.total)}</td><td>初始动能高 ${f3(ea[0].total)} m + 峰高势能 ${f3(s.prof[0].h)} m</td></tr>
         <tr><td>动能高（末点）</td><td class="num" style="text-align:right">${f3(last.kin)}</td><td>对应溜放末速 ${fmt(vEnd,2)} m/s</td></tr>
-        <tr><td>制动能高 h_制（夏季易行车）</td><td class="num" style="text-align:right">${f3(Hbrake)}</td><td>(v入² − 1.4²)/(2g′)，减速器消除的超速动能</td></tr>
+        <tr><td>制动能高（夏季易行车）</td><td class="num" style="text-align:right">${f3(Hbrake)}</td><td>减速器消除的超速动能</td></tr>
       </tbody>
     </table>
-    <div class="hint" style="margin-top:10px">能高线按 switchyard.top/hump 四条线画法：初始动能高线（横向基准）、阻力能高线（累计）、动能高线、制动能高线。本图为难行车·冬季自由溜放（无制动，制动能高=0），夏季易行车的制动能高单独列于上表。本方案：逆向道岔 <b>${cfg.nRev}</b> 组、顺向 <b>${cfg.nFwd}</b> 组、菱形 <b>${cfg.nDia}</b> 组、交分 <b>${cfg.nSlip}</b> 组，曲线总转角 <b>${fmt(cfg.thetaCurve,0)}</b>°；道岔阻力功 E_s ≈ ${fmt(Es,0)} N·m/kN，曲线阻力功 E_c ≈ ${fmt(Ec,0)} N·m/kN。</div>`;
+    <div class="hint" style="margin-top:10px">能高线按 switchyard.top/hump 四条线画法：初始动能高线、阻力能高线、动能高线、制动能高线。本图为难行车·冬季自由溜放（无制动）；夏季易行车的制动能高单独列于上表。本方案：逆向道岔 <b>${cfg.nRev}</b> 组、顺向 <b>${cfg.nFwd}</b> 组、菱形 <b>${cfg.nDia}</b> 组、交分 <b>${cfg.nSlip}</b> 组，曲线总转角 <b>${fmt(cfg.thetaCurve,0)}</b>°。</div>`;
 }
 
 /* ---------- 教材实例：华北 16 线 N=4 能高线计算示例（固定条件，与老师 switchyard.top/hump 一致） ---------- */
@@ -1942,15 +1928,14 @@ function renderExample(){
   const sigma=sigmaBase(veh.Q, ex.cond.t);
   const f=v=>fmt(v,3);
 
-  // 1) 教材基准的 5 个目标值（固定华北 16 线 N=4 算例）
+  // 1) 教材基准的 3 个目标值（固定华北 16 线 N=4 算例）
   $('example-objs').innerHTML=`
-    <div class="grid cols-4">
+    <div class="grid cols-3">
       <div class="stat blue"><span class="bar-inline"></span><div class="k">工程总成本 · 越小越优</div><div class="v">${fmt(meta.cost,0)}<small>万元</small></div></div>
       <div class="stat violet"><span class="bar-inline"></span><div class="k">解体能力 · 越大越优</div><div class="v">${fmt(meta.capacity,2)}<small>m/s</small></div></div>
       <div class="stat green"><span class="bar-inline"></span><div class="k">冬季可靠性 · 越大越优</div><div class="v">${fmt(meta.winterRel,2)}<small>倍</small></div></div>
-      <div class="stat teal"><span class="bar-inline"></span><div class="k">设备数量 · 越小越优</div><div class="v">${meta.equipment}<small>台</small></div></div>
     </div>
-    <div class="hint" style="margin-top:10px">峰高 H=<b>${fmt(ex.H,3)}m</b> · 溜放长 L=${ex.L}m · 难行车 ${veh.Q}t（f=${veh.f}m²，${veh.n}轴）· 推峰 ${vpush}m/s · 冬季 t=${ex.cond.t}℃、逆风 ${ex.cond.vwind}m/s · g′=${fmt(gp,3)} · 离散度 σ=${fmt(sigma,3)} · 安全连挂率 ${fmt(meta.coupling,1)}%。逆向道岔 ${ex.tp.nRev} 组·顺向 ${ex.tp.nFwd} 组·菱形 ${ex.tp.nDia} 组·交分 ${ex.tp.nSlip} 组·曲线总转角 ${ex.tp.curveDeg}°。</div>`;
+    <div class="hint" style="margin-top:10px">峰高 ${fmt(ex.H,3)}m · 溜放长 ${ex.L}m · 难行车 ${veh.Q}t · 推峰 ${vpush}m/s · 冬季 ${ex.cond.t}℃、逆风 ${ex.cond.vwind}m/s。逆向道岔 ${ex.tp.nRev} 组 · 顺向 ${ex.tp.nFwd} 组 · 菱形 ${ex.tp.nDia} 组 · 交分 ${ex.tp.nSlip} 组 · 曲线总转角 ${ex.tp.curveDeg}°。</div>`;
 
   // 2) 能高线图（四条线画法，复刻 switchyard.top/hump）
   const c=makeChart('chart-example-energy');
@@ -1964,7 +1949,7 @@ function renderExample(){
   c.line(ea.map(p=>[p.x,p.res]),0,L,0,ymax,'#dc2626',2);   // 阻力能高线（累计）
   c.line(ea.map(p=>[p.x,p.kin]),0,L,0,ymax,'#16a34a',2);   // 动能高线
   c.line(ea.map(p=>[p.x,0]),0,L,0,ymax,'#7c3aed',1.6,'4 3');// 制动能高线（冬季自由溜放=0）
-  c.text(c.x(L*0.98,0,L), c.y(hv0,0,ymax)-4, `初始动能高线 h推=${fmt(hv0,3)}m`, {color:'#9ca3af',size:10,anchor:'end'});
+  c.text(c.x(L*0.98,0,L), c.y(hv0,0,ymax)-4, `初始动能高线 ${fmt(hv0,3)}m`, {color:'#9ca3af',size:10,anchor:'end'});
   c.text(c.W/2,13,'能高线（难行车·冬季 自由溜放）',{color:'#6b7280',size:11});
   addLineHover(c,'chart-example-energy',0,L,0,ymax,
     [{name:'阻力能高线',color:'#dc2626',pts:ea.map(p=>[p.x,p.res]),fmt:v=>fmt(v,3)+' m'},
@@ -1972,16 +1957,16 @@ function renderExample(){
     {xFmt:v=>'里程 '+fmt(v,0)+' m'});
   $('legend-example-energy').innerHTML=`<span class="li"><span class="sw" style="background:#9ca3af"></span>初始动能高线</span><span class="li"><span class="sw" style="background:#dc2626"></span>阻力能高线（累计）</span><span class="li"><span class="sw" style="background:#16a34a"></span>动能高线</span><span class="li"><span class="sw" style="background:#7c3aed"></span>制动能高线（冬季=0）</span><span class="li"><span class="sw" style="background:#cbd5e1"></span>纵断面线</span>`;
 
-  // 3) 阻力能高分解（含教材公式）
+  // 3) 阻力能高分解（教材公式保留在源码注释中，页面仅展示数值）
   $('example-breakdown').innerHTML=`
     <table>
-      <thead><tr><th>阻力能高分量</th><th style="text-align:right">数值(m)</th><th>公式</th></tr></thead>
+      <thead><tr><th>阻力能高分量</th><th style="text-align:right">数值(m)</th><th>说明</th></tr></thead>
       <tbody>
-        <tr><td>基本阻力能高 h₀</td><td class="num" style="text-align:right">${f(last.base)}</td><td>r₀·L/1000，r₀=2.439+(0.00008Q−0.01743)t−0.015Q+0.00017t²+0.1v±1.65σ+0.39</td></tr>
-        <tr><td>风阻力能高 h_w</td><td class="num" style="text-align:right">${f(last.wind)}</td><td>r_w·L/1000，r_w=ρ·f·(v+v风)²/(2Q)</td></tr>
-        <tr><td>道岔阻力能高 h_s</td><td class="num" style="text-align:right">${f(last.sw)}</td><td>E_s/1000 = [24·N逆+12·(N顺+N菱)+48·N交分]/1000</td></tr>
-        <tr><td>曲线阻力能高 h_c</td><td class="num" style="text-align:right">${f(last.curve)}</td><td>E_c/1000 = 8·θ总/1000</td></tr>
-        <tr><td><b>阻力能高合计</b></td><td class="num" style="text-align:right"><b>${f(last.res)}</b></td><td>h₀ + h_w + h_s + h_c</td></tr>
+        <tr><td>基本阻力能高</td><td class="num" style="text-align:right">${f(last.base)}</td><td>基本阻力沿程累积（滚动轴承 + 空气阻力）</td></tr>
+        <tr><td>风阻力能高</td><td class="num" style="text-align:right">${f(last.wind)}</td><td>逆风阻力沿程累积</td></tr>
+        <tr><td>道岔阻力能高</td><td class="num" style="text-align:right">${f(last.sw)}</td><td>逆向 / 顺向 / 菱形 / 交分道岔阻力</td></tr>
+        <tr><td>曲线阻力能高</td><td class="num" style="text-align:right">${f(last.curve)}</td><td>曲线总转角阻力</td></tr>
+        <tr><td><b>阻力能高合计</b></td><td class="num" style="text-align:right"><b>${f(last.res)}</b></td><td>四项阻力分量之和</td></tr>
         <tr><td>总能高（末点）</td><td class="num" style="text-align:right">${f(last.total)}</td><td>初始动能高 ${f(hv0)} + 峰高势能 ${fmt(ex.H,3)}</td></tr>
         <tr><td>动能高（末点）</td><td class="num" style="text-align:right">${f(last.kin)}</td><td>对应溜放末速 ${fmt(vEnd,2)} m/s</td></tr>
       </tbody>
@@ -1998,22 +1983,21 @@ function renderExample(){
   });
   $('example-grades').innerHTML=`
     <table>
-      <thead><tr><th>坡段</th><th style="text-align:right">长度(m)</th><th style="text-align:right">坡度(‰)</th><th style="text-align:right">E_s(N·m/kN)</th><th style="text-align:right">E_c(N·m/kN)</th><th style="text-align:right">折算坡度 i′(‰)</th></tr></thead>
+      <thead><tr><th>坡段</th><th style="text-align:right">长度(m)</th><th style="text-align:right">坡度(‰)</th><th style="text-align:right">道岔阻力功(N·m/kN)</th><th style="text-align:right">曲线阻力功(N·m/kN)</th><th style="text-align:right">折算坡度(‰)</th></tr></thead>
       <tbody>${gRows}</tbody>
-    </table>
-    <div class="hint" style="margin-top:10px">道岔区坡折算后净坡度为负，表示道岔/曲线阻力功已超过坡道位能释放——这正是「道岔区坡宜缓」的物理原因。</div>`;
+    </table>`;
 
   // 5) 计算结果
   $('example-results').innerHTML=`
     <table>
       <tbody>
-        <tr><td>难行车冬季溜放末速 v末</td><td class="num" style="text-align:right"><b>${fmt(vEnd,2)}</b> m/s</td><td>${vEnd>=1.4?'<span class="badge-row badge ok">✓ ≥1.4 溜到位</span>':'<span class="badge-row badge bad">✗ 溜不到位</span>'}</td></tr>
+        <tr><td>难行车冬季溜放末速</td><td class="num" style="text-align:right"><b>${fmt(vEnd,2)}</b> m/s</td><td>${vEnd>=1.4?'<span class="badge-row badge ok">✓ ≥1.4 溜到位</span>':'<span class="badge-row badge bad">✗ 溜不到位</span>'}</td></tr>
         <tr><td>过程最大动能高</td><td class="num" style="text-align:right">${fmt(vMax,3)} m</td><td>对应最大速度 ≈ ${fmt(Math.sqrt(2*gp*vMax),2)} m/s</td></tr>
-        <tr><td>初始动能高 h推 = v推²/2g′</td><td class="num" style="text-align:right">${f(hv0)} m</td><td>v推 = ${vpush} m/s</td></tr>
-        <tr><td>阻力能高合计 Σh阻力</td><td class="num" style="text-align:right">${f(last.res)} m</td><td>四项阻力分量之和</td></tr>
+        <tr><td>初始动能高（推峰动能）</td><td class="num" style="text-align:right">${f(hv0)} m</td><td>推峰速度 ${vpush} m/s</td></tr>
+        <tr><td>阻力能高合计</td><td class="num" style="text-align:right">${f(last.res)} m</td><td>四项阻力分量之和</td></tr>
       </tbody>
     </table>
-    <div class="hint" style="margin-top:10px">能高法平衡式：H + h推 = Σh阻力 + h动能，即 ${fmt(ex.H,3)} + ${f(hv0)} = ${f(last.res)} + ${f(last.kin)} = ${f(last.total)} m。</div>`;
+    <div class="hint" style="margin-top:10px">以上按教材能高法（能量守恒）校核：阻力能高与末点动能之和，恰等于峰高与推峰动能之和。</div>`;
 }
 
 /* ---------- 平面展开图（复刻 switchyard.top/hump 的 HumpLayoutCtrl 画法） ---------- */
@@ -2584,26 +2568,18 @@ function bindEvents(){
     t.classList.add('active'); $(t.dataset.panel).classList.add('active');
     refreshVisibleCharts(t.dataset.panel);
   }));
-  // 目标卡片：默认勾选「成本 + 冬季可靠性」（真正的权衡对）。
-  // 限制依据共线性：冬季可靠性是唯一反向目标必须选中；连挂率恒=100%暂禁用。
+  // 目标卡片：默认勾选「成本 + 冬季可靠性」（最典型的反向权衡对）
   const grid=$('obj-grid');
   Object.keys(OBJDEF).forEach(k=>{
     const o=OBJDEF[k];
-    const grp=OBJ_GROUP[k];
-    const disabled=DISABLED.includes(k);
     const d=document.createElement('div');
-    d.className='obj-card'+(k==='cost'||k==='winter'?' on':'')+(disabled?' disabled':'');
+    d.className='obj-card'+(k==='cost'||k==='winter'?' on':'');
     d.dataset.key=k;
-    const cfNames=TRADEOFFS[k].map(c=>OBJDEF[c].name).join('、');
-    const grpBadge=disabled?'<span class="grp grp-off">待修·恒为100%</span>':`<span class="grp grp-${grp==='经济性'?'eco':'perf'}">${grp}</span>`;
-    d.innerHTML=`<span class="ck">✓</span><div class="nm">${o.name}</div><div class="ds">${o.desc}</div><span class="tag ${o.tag}">${o.tag==='min'?'越小越优':'越大越优'}</span>${grpBadge}<div class="cf">权衡：${cfNames||'—'}</div>`;
+    d.innerHTML=`<span class="ck">✓</span><div class="nm">${o.name}</div><div class="ds">${o.desc}</div><span class="tag ${o.tag}">${o.tag==='min'?'越小越优':'越大越优'}</span>`;
     d.addEventListener('click',()=>{
-      if(disabled){ toast('「安全连挂率」当前恒为 100%（公式退化），待按教材重新建模后启用。'); return; }
-      const turningOn=!d.classList.contains('on');
-      if(!turningOn){
-        if(REQUIRED.includes(k)){ toast('「冬季可靠性」是唯一与成本/能力反向的目标，取消后 Pareto 前沿会退化成单点，不能取消。'); return; }
-        const otherOn=[...grid.querySelectorAll('.obj-card.on')].filter(e=>e!==d && !REQUIRED.includes(e.dataset.key));
-        if(!otherOn.length){ toast('至少保留一个经济性/能力目标（成本/能力/设备）与「冬季可靠性」构成权衡。'); return; }
+      if(d.classList.contains('on')){
+        const otherOn=[...grid.querySelectorAll('.obj-card.on')].filter(e=>e!==d);
+        if(!otherOn.length){ toast('请至少保留一个优化目标'); return; }
       }
       d.classList.toggle('on');
     });
