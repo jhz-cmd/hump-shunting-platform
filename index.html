@@ -62,6 +62,9 @@ a{color:var(--primary);text-decoration:none}
 h3[data-tip]{position:relative;cursor:help}
 h3[data-tip]::after{content:attr(data-tip);position:absolute;left:0;top:calc(100% + 8px);max-width:360px;width:max-content;background:#0f172a;color:#e2e8f0;font-size:12px;line-height:1.6;font-weight:400;padding:7px 12px;border-radius:8px;box-shadow:0 8px 24px rgba(15,23,42,.3);opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .16s ease,transform .16s ease,visibility .16s;pointer-events:none;z-index:60;white-space:normal}
 h3[data-tip]:hover::after{opacity:1;visibility:visible;transform:translateY(0)}
+h3[data-toggle]{cursor:pointer;user-select:none}
+h3[data-toggle] .tog{font-size:12px;color:var(--text-2);transition:transform .18s ease;line-height:1}
+h3[data-toggle].open .tog{transform:rotate(90deg)}
 .card h4{font-size:13px;font-weight:700;color:var(--text);margin:16px 0 8px}
 .section-title{font-size:17px;font-weight:800;margin:22px 0 12px;display:flex;align-items:center;gap:9px}
 .section-title .bar{width:4px;height:20px;border-radius:3px;background:linear-gradient(var(--primary),var(--primary-600))}
@@ -691,14 +694,16 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
   <div class="panel" id="p-classify">
     <div class="section-title"><span class="bar"></span>解体与溜放分配（驼峰 → 平面调车衔接）</div>
     <div class="card">
-      <h3><span class="dot"></span>衔接说明</h3>
-      <div class="sub">驼峰解体只是调车作业的前半程——车辆经峰顶溜放进入各分类线（调车线）后，还需由机车在峰尾牵出线进行平面调车（取车、推进、转线、编组）。本模块把「驼峰纵断面设计」与「平面调车」通过统一的车辆状态交接接口衔接起来。</div>
-      <div class="algo-note">
-        <div class="t">分层衔接模型（不做单一大算法）</div>
-        <div class="it">① 驼峰层：峰高 / 纵断面 / 减速设备设计（本平台前 4 个标签页）；</div>
-        <div class="it">② 溜放分配层：决定每辆车溜入哪条分类线（本模块）；</div>
-        <div class="it">③ 平面调车层：后续取送、整理与编组（同学平台），一键导入本模块导出的 JSON 初始状态。</div>
-        <div class="tip">分配依据（教材 / 规范 / 知网）：同一编组去向（组号）车辆尽量溜入同一分类线，减少后续调车钩数与重复改编；禁溜车（危险货物、超限、特种车等）与禁过峰车不溜放，经禁溜线或机车送车。</div>
+      <h3 data-toggle="classify-brief"><span class="dot"></span>衔接说明<span class="tog">▸</span></h3>
+      <div id="classify-brief" style="display:none">
+        <div class="sub">驼峰解体只是调车作业的前半程——车辆经峰顶溜放进入各分类线（调车线）后，还需由机车在峰尾牵出线进行平面调车（取车、推进、转线、编组）。本模块把「驼峰纵断面设计」与「平面调车」通过统一的车辆状态交接接口衔接起来。</div>
+        <div class="algo-note">
+          <div class="t">分层衔接模型（不做单一大算法）</div>
+          <div class="it">① 驼峰层：峰高 / 纵断面 / 减速设备设计（本平台前 4 个标签页）；</div>
+          <div class="it">② 溜放分配层：决定每辆车溜入哪条分类线（本模块）；</div>
+          <div class="it">③ 平面调车层：后续取送、整理与编组（同学平台），一键导入本模块导出的 JSON 初始状态。</div>
+          <div class="tip">分配依据（教材 / 规范 / 知网）：同一编组去向（组号）车辆尽量溜入同一分类线，减少后续调车钩数与重复改编；禁溜车（危险货物、超限、特种车等）与禁过峰车不溜放，经禁溜线或机车送车。</div>
+        </div>
       </div>
     </div>
 
@@ -2444,6 +2449,15 @@ function bindEvents(){
     t.classList.add('active'); $(t.dataset.panel).classList.add('active');
     refreshVisibleCharts(t.dataset.panel);
   }));
+  // 衔接说明：默认折叠，点击标题展开/收起
+  document.querySelectorAll('h3[data-toggle]').forEach(h=>{
+    h.addEventListener('click',()=>{
+      const box=$(h.dataset.toggle);
+      const open=box.style.display!=='none';
+      box.style.display=open?'none':'block';
+      h.classList.toggle('open',!open);
+    });
+  });
   // 目标卡片：默认勾选「成本 + 冬季可靠性」（最典型的反向权衡对）
   const grid=$('obj-grid');
   Object.keys(OBJDEF).forEach(k=>{
