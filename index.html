@@ -705,7 +705,11 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
           <div class="field"><label>分类线数量 <span class="unit">条</span></label><input class="inp" id="classify-ntrack" type="number" value="4" min="2" max="8" step="1"></div>
           <div class="field"><label>单线有效长 <span class="unit">m</span></label><input class="inp" id="classify-efflen" type="number" value="300" min="100" max="900" step="10"></div>
         </div>
-        <div class="hint">股道有效长不足时，溜放车辆停放不下会形成「压车 / 堵车」，需减少溜放或借用相邻分类线（借用分类线可显著降低后续平面调车钩数）。</div>
+        <div class="row">
+          <div class="field"><label>峰尾牵出线长度 <span class="unit">m</span></label><input class="inp" id="classify-headshunt" type="number" value="100" min="20" max="600" step="5"></div>
+          <div class="field"><label>调车机车长度 <span class="unit">m</span></label><input class="inp" id="classify-loco" type="number" value="20" min="0" max="50" step="1"></div>
+        </div>
+        <div class="hint">股道有效长不足时，溜放车辆停放不下会形成「压车 / 堵车」，需减少溜放或借用相邻分类线（借用分类线可显著降低后续平面调车钩数）。牵出线长度与机车长度将写入导出 JSON，供平面调车平台计算取送、转线走行时间。</div>
       </div>
     </div>
 
@@ -722,7 +726,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
           <button class="btn primary" id="btn-classify-copy">复制 JSON</button>
           <button class="btn ghost" id="btn-classify-download">下载 .json</button>
         </div>
-        <div class="hint">JSON 三部分：<code>yard</code>（股道配置）、<code>cars</code>（逐辆车：编号 / 车型 / 长度 / 重量 / 去向 / 分类股道 / 顺序 / 难易行 / 是否禁溜）、<code>humpResult</code>（峰高 / 推峰速度 / 溜放顺序 / 预计完成时间，取自当前纵断面方案）。</div>
+        <div class="hint">导出格式与平面调车平台（SAN 弧模型 + A* 求解器）输入完全一致：<code>cars</code>＝每辆车 <code>{id, destination, length}</code>（去向即编组组号）；<code>tracks</code>＝各股道 <code>{name, capacity, initial, goal}</code>；<code>headshunt</code> 牵出线长、<code>locomotive</code> 机车长。<code>initial</code> 为驼峰溜放后各分类线车辆顺序，<code>goal</code> 为按去向集结于股道Ⅰ的编组计划（可在其平台导入后拖拽微调）。</div>
       </div>
     </div>
   </div>
@@ -2527,7 +2531,7 @@ function bindEvents(){
   $('btn-classify-example').addEventListener('click',()=>{ $('classify-cars-in').value=DEFAULT_CLASSIFY_CARS; renderClassify(); });
   $('btn-classify-copy').addEventListener('click',copyClassifyJSON);
   $('btn-classify-download').addEventListener('click',downloadClassifyJSON);
-  ['classify-ntrack','classify-efflen'].forEach(id=>{ $(id).addEventListener('input',renderClassify); $(id).addEventListener('change',renderClassify); });
+  ['classify-ntrack','classify-efflen','classify-headshunt','classify-loco'].forEach(id=>{ $(id).addEventListener('input',renderClassify); $(id).addEventListener('change',renderClassify); });
   renderClassify();
 }
 /* 切到某标签页时按真实容器宽度重绘对应图表 */
@@ -2616,25 +2620,30 @@ function classifyAssign(cars, nTrack, effLen){
     if(occ>effLen) warnings.push(n+'道 占用 '+fmt(occ,1)+' m 超过有效长 '+effLen+' m，需借用相邻分类线或减少溜放');
     if(tk.dests.length>1) warnings.push(n+'道 混有 '+tk.dests.length+' 个去向（'+tk.dests.join('/')+'），编组时需二次解体/整理');
   });
+  const dupIds=[], seenId={};
+  cars.forEach(c=>{ if(seenId[c.id]) dupIds.push(c.id); else seenId[c.id]=1; });
+  if(dupIds.length) warnings.push('车辆编号重复：'+dupIds.join('、')+'（平面调车平台要求编号唯一，导入会被拒绝）');
+  if(cars.length>40) warnings.push('车辆数 '+cars.length+' 超过平面调车平台上限 40 辆，导入会被拒绝');
   return {cars, tracks, names, forbidden, warnings};
 }
 
-function buildClassifyJSON(r, nTrack, effLen){
-  const cfg=state.cfg, sel=state.selected;
-  const H = (sel&&sel.prof) ? sel.prof[0].h : (cfg ? defaultProfile(cfg)[0].h : 4.31);
-  const vPush = (sel&&sel.meta) ? (sel.meta.vCap||sel.meta.capacity||2.17) : 2.17;
-  const L = cfg ? (cfg.L||380) : 380;
-  const cars = r.cars.map(c=>({
-    id:c.id, type:c.type, length:Math.round(c.length*10)/10, weight:c.weight,
-    destination:c.dest, classificationTrack:c.classificationTrack, order:c.order,
-    runningClass:c.run, forbidden:!!c.forbid, note:c.forbid?(c.reason||'禁溜'):''
-  }));
-  const totalLen = cars.reduce((s,c)=>s+c.length,0) + (cars.length>1?(cars.length-1)*1.0:0);
-  const estTime = Math.round(totalLen/Math.max(1.0,vPush) + cars.length*4);   // 走行时间 + 每钩摘钩间隔约 4 s（教学演示估算）
+function classifyGoalPlan(r){
+  const destOrder=[], seen={};
+  r.cars.forEach(c=>{ if(!seen[c.dest]){ seen[c.dest]=true; destOrder.push(c.dest); } });
+  const groups=destOrder.map(d=> r.cars.filter(c=>c.dest===d).map(c=>c.id));
+  return { destOrder, groups, goalTrain:[].concat(...groups) };
+}
+function buildClassifyJSON(r, nTrack, effLen, headshunt, loco){
+  // 与平面调车平台（SAN 弧模型 + A* 求解器 ShuntingSolver.validate）输入格式完全一致，
+  // 字段严格对齐其注册工具的 schema（additionalProperties:false），避免导入被拒。
+  // destination＝编组去向（组号），驱动其 SAN 弧奖励中「同去向相邻=2 / 编组先后=1 / 无关=3」的判定。
+  const plan=classifyGoalPlan(r);
+  const cars=r.cars.map(c=>({ id:c.id, destination:c.dest, length:Math.round(c.length*10)/10 }));
+  const tracks=r.names.map((n,i)=>({ name:n, capacity:effLen, initial:r.tracks[n].cars.map(c=>c.id), goal:i===0?plan.goalTrain:[] }));
   return JSON.stringify({
-    yard:{ trackCount:nTrack, leadTrackLength:L, tracks:r.names.map(n=>({id:n, effectiveLength:effLen})) },
-    cars: cars,
-    humpResult:{ humpHeight:Math.round(H*100)/100, pushSpeed:Math.round(vPush*100)/100, releaseSequence:r.cars.map(c=>c.id), estimatedCompletionTime:estTime }
+    cars, tracks,
+    headshunt:headshunt, locomotive:loco,
+    objective:'time', timeLimit:10, weight:350, poolSize:100, initialTrack:1
   }, null, 2);
 }
 
@@ -2643,12 +2652,15 @@ function renderClassify(){
   const text=$('classify-cars-in').value;
   const nTrack=clamp(parseInt($('classify-ntrack').value)||4,2,8);
   const effLen=clamp(parseInt($('classify-efflen').value)||300,100,900);
+  const headshunt=clamp(parseFloat($('classify-headshunt').value)||100,20,600);
+  const loco=clamp(parseFloat($('classify-loco').value)||20,0,50);
   const cars=parseClassifyCars(text);
   if(!cars.length){
     box.innerHTML='<div class="empty">未解析到车辆——请按「编号 车型 去向 长度 [禁]」格式每行录入一辆。</div>';
     $('classify-json-out').value=''; return;
   }
   const r=classifyAssign(cars, nTrack, effLen);
+  const plan=classifyGoalPlan(r);
   let html='<table><thead><tr><th>编号</th><th>车型</th><th>去向</th><th>长度 m</th><th>难/易行</th><th>状态</th><th>分类股道</th><th>股道内顺序</th></tr></thead><tbody>';
   r.cars.forEach(c=>{
     const inTrack=r.tracks[c.classificationTrack].cars.indexOf(c)+1;
@@ -2673,8 +2685,12 @@ function renderClassify(){
   if(r.warnings.length){
     html+='<div class="conclusion warn mt"><strong>提示</strong><ul class="dotlist">'+r.warnings.map(w=>'<li>'+esc(w)+'</li>').join('')+'</ul></div>';
   }
+  const goalLen=r.cars.reduce((s,c)=>s+c.length,0);
+  html+='<div class="mt"><b style="font-size:13px">编组计划（平面调车目标状态）：</b></div>';
+  html+='<div class="check-item '+(goalLen>effLen?'bad':'ok')+'" style="margin-top:6px"><div class="ico">'+(goalLen>effLen?'✗':'→')+'</div><div class="ct"><div class="nm">按去向 '+plan.destOrder.map(esc).join(' → ')+' 顺序集结于股道Ⅰ（出发车列）</div><div class="vl">'+plan.goalTrain.map(esc).join('、')+'</div><div class="vl">目标车列车长合计 '+fmt(goalLen,1)+' m'+(goalLen>effLen?' · 超出股道Ⅰ有效长 '+effLen+' m':'')+'</div></div></div>';
+  if(goalLen>effLen) html+='<div class="conclusion warn mt"><strong>提示</strong><ul class="dotlist"><li>编组目标车列超出股道Ⅰ有效长，请增大有效长或减少车辆，否则平面调车平台导入时报「超出容量」。</li></ul></div>';
   box.innerHTML=html;
-  $('classify-json-out').value=buildClassifyJSON(r, nTrack, effLen);
+  $('classify-json-out').value=buildClassifyJSON(r, nTrack, effLen, headshunt, loco);
 }
 
 function copyClassifyJSON(){
