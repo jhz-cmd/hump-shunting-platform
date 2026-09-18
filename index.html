@@ -503,8 +503,8 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
         <div class="field">
           <label>算法</label>
           <select class="sel" id="in-algo">
-            <option value="mopso" selected>MOPSO 多目标粒子群</option>
-            <option value="nsga2">NSGA-II 多目标遗传算法</option>
+            <option value="mopso">MOPSO 多目标粒子群</option>
+            <option value="nsga2" selected>NSGA-II 多目标遗传算法</option>
             <option value="alns">ALNS 自适应大邻域搜索</option>
           </select>
         </div>
@@ -1655,26 +1655,41 @@ function renderPareto(){
   const lg=$('legend-pareto'); lg.innerHTML='';
   if(!state.archive.length){ c.text(c.W/2,c.H/2,'尚无 Pareto 解，请先运行优化',{color:'#9ca3af'}); return; }
   const objIdx=cfg.objIdx;
-  // 目标对选择：X/Y 下拉可切换要展示的两个目标。默认取「首目标 vs 末目标」——
-  // 三个目标（成本/能力/冬季可靠性）时首末即「成本 vs 冬季」这一真冲突对，
-  // 避免「成本 vs 能力」（两者在可行区都倾向低峰高、同向）使散点塌缩成单点。
+  // 目标对选择：X/Y 下拉可切换。默认取「真冲突对」——成本(峰高↑→成本↑) vs 冬季可靠性(峰高↑→可靠性↑)，
+  // 这是唯一真正的权衡对；「成本 vs 能力」两者都在低峰高处更优（同向），前沿会塌缩成单点，故默认避开。
   const selX=$('pareto-x'), selY=$('pareto-y');
+  const defX=()=> (objIdx.includes('winter') ? (objIdx.find(o=>OBJDEF[o].dir==='min')||objIdx[0]) : objIdx[0]);
+  const defY=()=> (objIdx.includes('winter') ? 'winter' : (objIdx[objIdx.length-1]||objIdx[0]));
   if(selX && selY){
     const curKeys=objIdx.join('|');
     if(selX.dataset.keys!==curKeys){
       selX.dataset.keys=curKeys;
-      selX.innerHTML=objIdx.map((o,i)=>`<option value="${o}"${i===0?' selected':''}>${esc(OBJDEF[o].name)}</option>`).join('');
-      selY.innerHTML=objIdx.map((o,i)=>`<option value="${o}"${i===objIdx.length-1?' selected':''}>${esc(OBJDEF[o].name)}</option>`).join('');
+      const dx=defX(), dy=defY();
+      selX.innerHTML=objIdx.map((o,i)=>`<option value="${o}"${o===dx?' selected':''}>${esc(OBJDEF[o].name)}</option>`).join('');
+      selY.innerHTML=objIdx.map((o,i)=>`<option value="${o}"${o===dy?' selected':''}>${esc(OBJDEF[o].name)}</option>`).join('');
     }
     var o1=selX.value, o2=selY.value;
-    if(!o1) o1=objIdx[0];
-    if(!o2||o2===o1) o2=objIdx[objIdx.length-1]||objIdx[0];
+    if(!o1) o1=defX();
+    if(!o2||o2===o1) o2=objIdx.find(o=>o!==o1)||o1;
   } else {
-    var o1=objIdx[0], o2=objIdx.length>1?objIdx[objIdx.length-1]:objIdx[0];
+    var o1=defX(), o2=defY();
+    if(o2===o1) o2=objIdx.find(o=>o!==o1)||o1;
+  }
+  // 塌缩自检：若当前目标对在前沿上无展开（所有点同值 → 散点塌成单点），
+  // 自动在勾选目标中另找一对「有展开」的真冲突对，保证散点图稳定。
+  const spans=(a,b)=>{ if(state.archive.length<2) return true; const r1=state.archive.map(s=>s.meta[a]); const r2=state.archive.map(s=>s.meta[b]); return Math.max(...r1)-Math.min(...r1)>1e-6 && Math.max(...r2)-Math.min(...r2)>1e-6; };
+  if(!spans(o1,o2)){
+    let ok=false;
+    for(const a of objIdx){ for(const b of objIdx){ if(a!==b && spans(a,b)){ o1=a; o2=b; ok=true; break; } if(ok) break; } }
+    if(ok && selX && selY){ selX.value=o1; selY.value=o2; }
   }
   const raw=state.archive.map(s=>({...s, r1:s.meta[o1], r2:s.meta[o2]}));
   let xmin=Math.min(...raw.map(d=>d.r1)), xmax=Math.max(...raw.map(d=>d.r1));
   let ymin=Math.min(...raw.map(d=>d.r2)), ymax=Math.max(...raw.map(d=>d.r2));
+  // 同向塌缩判定：未勾选「冬季可靠性」（唯一与成本/能力均真冲突的目标）且选了 ≥2 个目标，
+  // 则所选目标几乎必然同向（成本/能力都在低峰高处更优），前沿退化成单点；或 archive 多点但两轴均无展开。
+  const degenerate=objIdx.length>=2 && !objIdx.includes('winter');
+  const collapsed=degenerate || ((xmax-xmin<1e-6 || ymax-ymin<1e-6) && state.archive.length>1);
   const base=state.exampleBaseline;              // 教材基准锚点（橙色，对比基准）
   if(base && base.meta){
     xmin=Math.min(xmin,base.meta[o1]); xmax=Math.max(xmax,base.meta[o1]);
@@ -1694,6 +1709,9 @@ function renderPareto(){
     const s=state.selected; c.scatter([[s.meta[o1],s.meta[o2]]],xmin,xmax,ymin,ymax,'#dc2626',7);
   }
   c.text(c.W/2, 13, 'Pareto 前沿（目标空间）', {color:'#6b7280',size:11.5});
+  if(collapsed){
+    c.text(c.W/2, 30, '所选目标同向（均随峰高同增/同减），无 Pareto 权衡——建议勾选「冬季溜放可靠性最高」形成冲突对', {color:'#dc2626',size:11});
+  }
   lg.innerHTML=`<span class="li"><span class="sw" style="background:#2563eb"></span>Pareto 非支配解</span><span class="li"><span class="sw" style="background:#dc2626"></span>当前选中方案</span>`+(base&&base.meta?`<span class="li"><span class="sw" style="background:#f59e0b"></span>教材基准</span>`:'');
 }
 
