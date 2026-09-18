@@ -655,7 +655,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
   <div class="panel" id="p-traffic">
     <div class="section-title"><span class="bar"></span>车流适应性分析</div>
     <div class="card">
-      <div class="sub">传统设计只保证最不利条件（极端车）。车流适应性：引入空重车比例，看「仅满足典型条件」的设计在偏离极端条件时会发生什么。</div>
+      <div class="sub">传统设计只保证最不利条件（极端车）。车流适应性：引入空重车比例，看「仅满足典型条件」的设计在偏离极端条件时会发生什么。其中<b>空车＝难行车、重车＝易行车</b>，参数直接取自「车型管理」三基准车（空车总重含自重，非 0 吨）。</div>
       <div class="toolbar">
         <label style="font-weight:600">空车比例：</label>
         <input type="range" id="traffic-empty" min="0" max="80" value="30" style="flex:1;max-width:320px">
@@ -665,22 +665,17 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
     </div>
     <div class="card mt">
       <h3><span class="dot"></span>车流重量分布</h3>
-      <div class="sub">空车（棚车 ~25t）与重车（敞车 ~88t）的双峰分布</div>
+      <div class="sub">空车＝难行车（P70H棚车 ~30t，含自重）、重车＝易行车（C70敞车满载 ~94t）的双峰分布，均取自「车型管理」三基准车</div>
       <div class="chart-box" id="chart-traffic-hist"></div>
     </div>
     <div class="card mt">
       <h3><span class="dot"></span>当前方案的溜放结果</h3>
-      <div class="sub">溜放到位率 / 安全连挂率 / 超速率 随空车比例变化（分开绘制，便于单独观察）</div>
-      <div class="grid cols-3">
+      <div class="sub">溜放到位率 / 超速率 随空车比例变化（空车＝难行车、重车＝易行车，均取自「车型管理」三基准车）</div>
+      <div class="grid cols-2">
         <div>
           <div class="sub" style="font-weight:700;color:var(--text);margin-bottom:4px">溜放到位率</div>
           <div class="chart-box" id="chart-traffic-reach"></div>
           <div class="legend" id="legend-traffic-reach"></div>
-        </div>
-        <div>
-          <div class="sub" style="font-weight:700;color:var(--text);margin-bottom:4px">安全连挂率</div>
-          <div class="chart-box" id="chart-traffic-couple"></div>
-          <div class="legend" id="legend-traffic-couple"></div>
         </div>
         <div>
           <div class="sub" style="font-weight:700;color:var(--text);margin-bottom:4px">超速率</div>
@@ -688,6 +683,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
           <div class="legend" id="legend-traffic-over"></div>
         </div>
       </div>
+      <div class="hint mt">安全连挂率不单独绘制：减速顶按最不利的易行车夏季工况配备，车列经打靶区制动后连挂速度 ≤ 1.4 m/s 恒成立，连挂率 ≈ 100%、不随空重比变化。当当前方案峰高处于可行区（难行车冬季末速明显高于 1.4 m/s、易行车夏季未超 7 m/s）时，上两条曲线恒为 ≈100% / ≈0%；「溜不到位（轻车·冬季）」与「超速（重车·夏季）」两个失效模式随空重比的变化，只有在峰高逼近设计边界时才显现，见下方风险对比。</div>
     </div>
     <div class="card mt">
       <h3><span class="dot"></span>两种峰高方案的风险对比（非极端车流）</h3>
@@ -2391,34 +2387,38 @@ function runTraffic(){
   const baseProf = state.selected?state.selected.prof:defaultProfile(cfg);
   const N=400;
   const condW=cfg.wWinter, condS=cfg.wSummer;
-  let reach=0, couple=0, over=0;
+  let reach=0, over=0;
   const weights=[];
   for(let i=0;i<N;i++){
-    const isEmpty=Math.random()<pEmpty;
-    let Q, f, n=4;
-    if(isEmpty){ Q=clamp(25+gauss()*3.5, 18, 34); f=11.41; }  // 空棚车
-    else { Q=clamp(88+gauss()*5, 70, 96); f=7.71; }           // 重敞车
-    weights.push(Q);
-    const veh={Q, f, n};
-    const w=simulate(baseProf,veh,condW,1.4);
-    const s=simulate(baseProf,veh,condS,1.9);
-    if(endSpeed(w)>=1.4) reach++;
-    if(endSpeed(s)<=1.4) couple++;
-    if(speedAt(s,cfg.xRetarderI*cfg.L)>7.0) over++;
+    const veh=trafficCar(pEmpty);                 // 空车=难行车、重车=易行车（车型管理）
+    weights.push(veh.Q);
+    const w=simulate(baseProf,veh,condW,1.4);     // 冬季：难行车不利工况
+    const s=simulate(baseProf,veh,condS,1.9);     // 夏季：易行车不利工况
+    if(endSpeed(w)>=1.4) reach++;                 // 溜放到位率：冬季末速 ≥ 1.4 m/s
+    if(speedAt(s,cfg.xRetarderI*cfg.L)>7.0) over++; // 超速率：夏季减速器Ⅰ入口 > 7 m/s
   }
-  return {reach:reach/N*100, couple:couple/N*100, over:over/N*100, weights};
+  return {reach:reach/N*100, over:over/N*100, weights};
 }
 function gauss(){ let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+/* 车流适应性车型抽样：空车=难行车、重车=易行车（与「车型管理」三基准车同一套参数）。
+   总重 Q 含自重（难行车 P70H棚车 30t、易行车 C70敞车满载 94t），绝不为 0；重量按正态 ±12% 离散模拟车流波动。
+   空车取难行车 σ=+1（基本阻力取上限）、重车取易行车 σ=−1（取下限），使「难/易」差异在阻力上同样体现。 */
+function trafficCar(pEmpty){
+  const base = Math.random() < pEmpty ? VEHICLES.hard : VEHICLES.easy;
+  const Q = clamp(base.Q * (1 + 0.12*gauss()), base.Q*0.8, base.Q*1.2);
+  return { Q, f: base.f, n: base.n, sigma: base.sigma };
+}
 
 function renderTrafficHist(weights){
   const c=makeChart('chart-traffic-hist');
-  const bins=[]; for(let i=0;i<14;i++) bins.push({x0:15+i*6, n:0});
-  weights.forEach(w=>{ const b=Math.floor((w-15)/6); if(b>=0&&b<bins.length) bins[b].n++; });
+  const xmin=20, xmax=118, nb=14, bw=(xmax-xmin)/nb;
+  const bins=[]; for(let i=0;i<nb;i++) bins.push({x0:xmin+i*bw, n:0});
+  weights.forEach(w=>{ const b=Math.floor((w-xmin)/bw); if(b>=0&&b<nb) bins[b].n++; });
   const ymax=Math.max(...bins.map(b=>b.n))*1.15;
-  c.grid(15,99,0,ymax);
-  c.axes(15,99,0,ymax, v=>fmt(v,0), v=>fmt(v,0), '车辆总重 (t)', '频数 (辆)');
-  const bw=(99-15)/14;
-  bins.forEach((b,i)=>{ const px=c.x(15+i*bw,15,99), h=b.n/ymax*(c.H-16-34); c.rect(px+bw*0.08, c.H-34-h, bw*0.84, h, '#2563eb'); });
+  c.grid(xmin,xmax,0,ymax);
+  c.axes(xmin,xmax,0,ymax, v=>fmt(v,0), v=>fmt(v,0), '车辆总重 (t)', '频数 (辆)');
+  const pxw=(xmax-xmin)/nb;
+  bins.forEach((b,i)=>{ const px=c.x(xmin+i*pxw,xmin,xmax), h=b.n/ymax*(c.H-16-34); c.rect(px+pxw*0.08, c.H-34-h, pxw*0.84, h, '#2563eb'); });
   c.text(c.W/2,13,'车辆总重分布（t）',{color:'#6b7280',size:11});
 }
 
@@ -2426,18 +2426,16 @@ function renderTrafficCurve(){
   const cfg=state.cfg;
   const baseProf = state.selected?state.selected.prof:defaultProfile(cfg);
   const curPe=parseInt($('traffic-empty').value);
-  const xs=[], reach=[], couple=[], over=[];
+  const xs=[], reach=[], over=[];
   const tests=[0,10,20,30,40,50,60,70,80];
   tests.forEach(pe=>{
-    const pEmpty=pe/100; let r=0,cpl=0,ov=0; const N=150;
+    const pEmpty=pe/100; let r=0,ov=0; const N=150;
     for(let i=0;i<N;i++){
-      const isEmpty=Math.random()<pEmpty;
-      let Q,f; if(isEmpty){Q=clamp(25+gauss()*3.5,18,34);f=11.41;}else{Q=clamp(88+gauss()*5,70,96);f=7.71;}
-      const veh={Q,f,n:4};
+      const veh=trafficCar(pEmpty);               // 空车=难行车、重车=易行车
       const w=simulate(baseProf,veh,cfg.wWinter,1.4), s=simulate(baseProf,veh,cfg.wSummer,1.9);
-      if(endSpeed(w)>=1.4)r++; if(endSpeed(s)<=1.4)cpl++; if(speedAt(s,cfg.xRetarderI*cfg.L)>7)ov++;
+      if(endSpeed(w)>=1.4)r++; if(speedAt(s,cfg.xRetarderI*cfg.L)>7)ov++;
     }
-    xs.push(pe); reach.push(r/N*100); couple.push(cpl/N*100); over.push(ov/N*100);
+    xs.push(pe); reach.push(r/N*100); over.push(ov/N*100);
   });
   const ki=Math.max(0,Math.min(tests.length-1,Math.round(curPe/10)));
   const yrng=series=>{ let lo=Math.min(...series), hi=Math.max(...series); const pad=(hi-lo)*0.15||5; lo=Math.max(0,lo-pad); hi=Math.min(100,hi+pad); return [lo,hi]; };
@@ -2455,7 +2453,6 @@ function renderTrafficCurve(){
     $(legendId).innerHTML=`<span class="li"><span class="sw" style="background:${color}"></span>${legendName}</span><span class="li"><span class="sw" style="background:#f59e0b"></span>当前空车比例 ${curPe}%</span>`;
   }
   drawOne('chart-traffic-reach', '#2563eb', reach, '到位率 (%)', 'legend-traffic-reach', '溜放到位率');
-  drawOne('chart-traffic-couple', '#16a34a', couple, '连挂率 (%)', 'legend-traffic-couple', '安全连挂率');
   drawOne('chart-traffic-over', '#dc2626', over, '超速率 (%)', 'legend-traffic-over', '超速率');
 }
 
@@ -2479,9 +2476,7 @@ function renderTrafficRisk(){
   tests.forEach(pe=>{
     const pEmpty=pe/100; let ua=0,ub=0,oa=0,ob=0,fa=0,fb=0; const N=300;
     for(let i=0;i<N;i++){
-      const isEmpty=Math.random()<pEmpty;
-      let Q,f; if(isEmpty){Q=clamp(25+gauss()*3.5,18,34);f=11.41;}else{Q=clamp(88+gauss()*5,70,96);f=7.71;}
-      const veh={Q,f,n:4};
+      const veh=trafficCar(pEmpty);               // 空车=难行车、重车=易行车
       const wA=simulate(profA,veh,cfg.wWinter,1.4), sA=simulate(profA,veh,cfg.wSummer,1.9);
       const wB=simulate(profB,veh,cfg.wWinter,1.4), sB=simulate(profB,veh,cfg.wSummer,1.9);
       const ua_=endSpeed(wA)<1.4, oa_=speedAt(sA,cfg.xRetarderI*cfg.L)>7.0;
