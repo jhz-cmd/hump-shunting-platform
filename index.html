@@ -413,7 +413,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
       </div>
 
       <div class="card">
-        <h3 data-tip="地形约束与纵断面总长度"><span class="dot"></span>地形限制 &amp; 溜放距离</h3>
+        <h3 data-tip="地形约束、纵断面总长与坡段数量"><span class="dot"></span>地形限制 &amp; 溜放距离</h3>
         <div class="row">
           <div class="field">
             <label>最大峰高限制 <span class="unit">m</span></label>
@@ -427,8 +427,17 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
             <label>溜放部分总长 <span class="unit">m</span></label>
             <div class="range-row"><input class="inp inp-range" id="in-length" type="range" value="380" min="250" max="600" step="10" data-unit=" m"><span class="range-val">380 m</span></div>
           </div>
+          <div class="field">
+            <label>坡段数量（变坡点数量）</label>
+            <select class="sel" id="in-segments">
+              <option value="3">3 段（加速坡 / 道岔区坡 / 打靶区）</option>
+              <option value="4" selected>4 段（+中间坡，推荐）</option>
+              <option value="5">5 段（+两个中间坡）</option>
+              <option value="6">6 段（+三个中间坡）</option>
+            </select>
+          </div>
         </div>
-        <div class="hint">我国驼峰峰高一般 4.0 m 以上，北方寒冷地区比南方高 0.5～1.0 m。</div>
+        <div class="hint">我国驼峰峰高一般 4.0 m 以上，北方寒冷地区比南方高 0.5～1.0 m。坡段数即纵断面变坡点数量，决定加速坡 / 中间坡 / 道岔区坡 / 打靶区的段数。</div>
       </div>
     </div>
 
@@ -471,17 +480,8 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
   <div class="panel" id="p-optimize">
     <div class="section-title"><span class="bar"></span>多目标自动优化引擎</div>
     <div class="card">
-      <h3 data-tip="配置优化算法、坡段数与种群规模；优化目标在下方「优化目标」卡片选择"><span class="dot"></span>优化设置</h3>
+      <h3 data-tip="配置优化算法与种群规模；优化目标在下方「优化目标」卡片选择"><span class="dot"></span>优化设置</h3>
       <div class="row">
-        <div class="field">
-          <label>坡段数量（变坡点数量）</label>
-          <select class="sel" id="in-segments">
-            <option value="3">3 段（加速坡 / 道岔区坡 / 打靶区）</option>
-            <option value="4" selected>4 段（+中间坡，推荐）</option>
-            <option value="5">5 段（+两个中间坡）</option>
-            <option value="6">6 段（+三个中间坡）</option>
-          </select>
-        </div>
         <div class="field">
           <label>种群规模</label>
           <input class="inp" id="in-pop" type="number" value="50" min="20" max="300" step="10">
