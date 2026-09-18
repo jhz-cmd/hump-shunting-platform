@@ -281,7 +281,6 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
       <div class="cover-feat"><div class="n"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><circle cx="9" cy="7" r="2"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="15" cy="17" r="2"/></svg></span>设计输入</div><div class="d">三基准车、股道数、道岔与阻力参数、平面展开图</div></div>
       <div class="cover-feat"><div class="n"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg></span>多目标优化</div><div class="d">PSO / ALNS / NSGA-II 自动寻优</div></div>
       <div class="cover-feat"><div class="n"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20 L8 12 L11 15 L15 6 L21 10"/></svg></span>纵断面方案</div><div class="d">凹形「前陡后缓」纵断面、峰高与能高线分析</div></div>
-      <div class="cover-feat"><div class="n"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="8" width="14" height="7" rx="1"/><line x1="5" y1="11" x2="19" y2="11"/><circle cx="9" cy="17" r="1.5"/><circle cx="15" cy="17" r="1.5"/></svg></span>车流适应性</div><div class="d">蒙特卡洛模拟车流溜放与安全连挂</div></div>
       <div class="cover-feat"><div class="n"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v3H9z"/><rect x="6" y="5" width="12" height="15" rx="2"/><path d="M9 13 l2 2 l4 -4"/></svg></span>检算报告</div><div class="d">规范约束逐项自动校核</div></div>
       <div class="cover-feat"><div class="n"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11 l4 4 l4 -4"/><path d="M4 19 h16"/></svg></span>结果存档</div><div class="d">方案本地保存、导出与载入</div></div>
     </div>
@@ -323,7 +322,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
       <span class="badge" id="btn-src-header" style="cursor:pointer" title="查看网页源代码">查看源代码</span>
     </div>
   </div>
-  <div class="header-sub">驼峰调车智能优化平台 —— 纵断面多目标自动优化 · 方案一键生成 · 车流适应性分析（依据《铁路站场及枢纽》教材 &amp; TB10062-2018 规范）</div>
+  <div class="header-sub">驼峰调车智能优化平台 —— 纵断面多目标自动优化 · 方案一键生成（依据《铁路站场及枢纽》教材 &amp; TB10062-2018 规范）</div>
 </div>
 
 <div class="wrap">
@@ -331,9 +330,8 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
     <div class="tab active" data-panel="p-input"><span class="num">1</span>设计输入</div>
     <div class="tab" data-panel="p-optimize"><span class="num">2</span>多目标优化</div>
     <div class="tab" data-panel="p-profile"><span class="num">3</span>纵断面方案</div>
-    <div class="tab" data-panel="p-traffic"><span class="num">4</span>车流适应性</div>
-    <div class="tab" data-panel="p-check"><span class="num">5</span>检算报告</div>
-    <div class="tab" data-panel="p-history"><span class="num">6</span>结果存档</div>
+    <div class="tab" data-panel="p-check"><span class="num">4</span>检算报告</div>
+    <div class="tab" data-panel="p-history"><span class="num">5</span>结果存档</div>
   </div>
 
   <!-- ================= 1. 设计输入 ================= -->
@@ -400,23 +398,15 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
 
     <div class="grid cols-2 mt">
       <div class="card">
-        <h3><span class="dot"></span>车流组成（车流适应性）</h3>
-        <div class="sub">引入车流特点，评估非极端条件下的设计表现</div>
+        <h3><span class="dot"></span>解体能力参数</h3>
+        <div class="sub">用于把高峰小时能力折算成日解体能力</div>
         <div class="row">
-          <div class="field">
-            <label>空车比例 <span class="unit">%</span></label>
-            <input class="inp" id="in-empty" type="number" value="30" min="0" max="80" step="5">
-          </div>
-          <div class="field">
-            <label>重车比例 <span class="unit">%</span></label>
-            <input class="inp" id="in-heavy" type="number" value="70" min="0" max="100" step="5">
-          </div>
           <div class="field">
             <label>高峰小时系数 <span class="unit">倍</span></label>
             <input class="inp" id="in-peak" type="number" value="1.3" min="1" max="2" step="0.1">
           </div>
         </div>
-        <div class="hint">空车 → 冬季难行车（易溜不到位）；重车 → 夏季易行车（易超速），空重比改变将直接改变推峰速度与制动等级策略。<b>高峰小时系数</b>反映高峰时段比全天平均忙多少倍，用于把高峰小时能力折算成日解体能力（一般取 1.2～1.5）。</div>
+        <div class="hint"><b>高峰小时系数</b>反映高峰时段比全天平均忙多少倍，用于把高峰小时能力折算成日解体能力（一般取 1.2～1.5）。</div>
       </div>
 
       <div class="card">
@@ -651,60 +641,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
     </div>
   </div>
 
-  <!-- ================= 5. 车流适应性 ================= -->
-  <div class="panel" id="p-traffic">
-    <div class="section-title"><span class="bar"></span>车流适应性分析</div>
-    <div class="card">
-      <div class="sub">传统设计只保证最不利条件（极端车）。车流适应性：引入空重车比例，看「仅满足典型条件」的设计在偏离极端条件时会发生什么。其中<b>空车＝难行车、重车＝易行车</b>，参数直接取自「车型管理」三基准车（空车总重含自重，非 0 吨）。</div>
-      <div class="toolbar">
-        <label style="font-weight:600">空车比例：</label>
-        <input type="range" id="traffic-empty" min="0" max="80" value="30" style="flex:1;max-width:320px">
-        <span class="pill blue" id="traffic-empty-val">30%</span>
-        <button class="btn ghost" id="btn-traffic-run">重新仿真</button>
-      </div>
-    </div>
-    <div class="card mt">
-      <h3><span class="dot"></span>车流重量分布</h3>
-      <div class="sub">空车＝难行车（P70H棚车 ~30t，含自重）、重车＝易行车（C70敞车满载 ~94t）的双峰分布，均取自「车型管理」三基准车</div>
-      <div class="chart-box" id="chart-traffic-hist"></div>
-    </div>
-    <div class="card mt">
-      <h3><span class="dot"></span>当前方案的溜放结果</h3>
-      <div class="sub">溜放到位率 / 超速率 随空车比例变化（空车＝难行车、重车＝易行车，均取自「车型管理」三基准车）</div>
-      <div class="grid cols-2">
-        <div>
-          <div class="sub" style="font-weight:700;color:var(--text);margin-bottom:4px">溜放到位率</div>
-          <div class="chart-box" id="chart-traffic-reach"></div>
-          <div class="legend" id="legend-traffic-reach"></div>
-        </div>
-        <div>
-          <div class="sub" style="font-weight:700;color:var(--text);margin-bottom:4px">超速率</div>
-          <div class="chart-box" id="chart-traffic-over"></div>
-          <div class="legend" id="legend-traffic-over"></div>
-        </div>
-      </div>
-      <div class="hint mt">安全连挂率不单独绘制：减速顶按最不利的易行车夏季工况配备，车列经打靶区制动后连挂速度 ≤ 1.4 m/s 恒成立，连挂率 ≈ 100%、不随空重比变化。当当前方案峰高处于可行区（难行车冬季末速明显高于 1.4 m/s、易行车夏季未超 7 m/s）时，上两条曲线恒为 ≈100% / ≈0%；「溜不到位（轻车·冬季）」与「超速（重车·夏季）」两个失效模式随空重比的变化，只有在峰高逼近设计边界时才显现，见下方风险对比。</div>
-    </div>
-    <div class="card mt">
-      <h3><span class="dot"></span>两种峰高方案的风险对比（非极端车流）</h3>
-      <div class="sub"><b>按难行车定峰</b>（当前方案，高峰高）保证空车冬季溜到位，但重车夏季易超速；<b>按中行车定峰</b>（对照方案，低峰高）峰高低、成本省，但空车冬季易溜不到位。下图把「失效」拆成两种模式分别对比。</div>
-      <div class="grid cols-2">
-        <div>
-          <div class="sub" style="font-weight:700;color:var(--text);margin-bottom:4px">① 溜不到位率（冬季末速 &lt; 1.4 m/s）</div>
-          <div class="chart-box" id="chart-risk-underreach"></div>
-          <div class="legend" id="legend-risk-underreach"></div>
-        </div>
-        <div>
-          <div class="sub" style="font-weight:700;color:var(--text);margin-bottom:4px">② 超速率（减速器入口速度 &gt; 7 m/s）</div>
-          <div class="chart-box" id="chart-risk-over"></div>
-          <div class="legend" id="legend-risk-over"></div>
-        </div>
-      </div>
-      <div class="conclusion info mt" id="traffic-conclusion"></div>
-    </div>
-  </div>
-
-  <!-- ================= 6. 检算报告 ================= -->
+  <!-- ================= 4. 检算报告 ================= -->
   <div class="panel" id="p-check">
     <div class="section-title"><span class="bar"></span>检算报告</div>
     <div class="grid cols-2">
@@ -732,7 +669,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
     </div>
   </div>
 
-  <!-- ================= 6. 结果存档 ================= -->
+  <!-- ================= 5. 结果存档 ================= -->
   <div class="panel" id="p-history">
     <div class="section-title"><span class="bar"></span>结果存档</div>
     <div class="card">
@@ -939,8 +876,8 @@ function distributeCount(n, N){
    目标集依据知网文献（张春民《自动化驼峰纵断面优化设计研究》2011 等）与教材 4-2 节：
    峰高(成本)最小、推峰速度(能力)最大、难行车溜放(冬季可靠性)最大 —— 三者两两冲突，
    可自由勾选任意组合；冲突时 NSGA-II/MOPSO/ALNS 输出 Pareto 前沿（多样化解集）。
-   注：安全连挂率教材仅给出「安全连挂速度 1.4 m/s」的定义、无量化公式，故不作优化目标，
-   由「车流适应性」页蒙特卡洛统计；减速器/减速顶数量已计入成本 costRet/costTop。 */
+   注：安全连挂率教材仅给出「安全连挂速度 1.4 m/s」的定义、无量化公式，故不作优化目标；
+   减速器/减速顶数量已计入成本 costRet/costTop。 */
 const OBJDEF = {
   cost:      { name:'工程总成本最低',        dir:'min', unit:'万元', tag:'min', desc:'土石方 + 减速器 + 减速顶，总投资估算' },
   capacity:  { name:'解体能力最大',          dir:'max', unit:'m/s', tag:'max', desc:'最大允许推峰速度（受夏季限速与间隔控制）' },
@@ -2380,169 +2317,6 @@ function selectSolution(s){
   const sel=$('profile-select'); if(sel){ const idx=state.archive.indexOf(s); if(idx>=0) sel.value=String(idx); }
 }
 
-/* ---------- 车流适应性（蒙特卡洛） ---------- */
-function runTraffic(){
-  const cfg=state.cfg;
-  const pEmpty=parseInt($('traffic-empty').value)/100;
-  const baseProf = state.selected?state.selected.prof:defaultProfile(cfg);
-  const N=400;
-  const condW=cfg.wWinter, condS=cfg.wSummer;
-  let reach=0, over=0;
-  const weights=[];
-  for(let i=0;i<N;i++){
-    const veh=trafficCar(pEmpty);                 // 空车=难行车、重车=易行车（车型管理）
-    weights.push(veh.Q);
-    const w=simulate(baseProf,veh,condW,1.4);     // 冬季：难行车不利工况
-    const s=simulate(baseProf,veh,condS,1.9);     // 夏季：易行车不利工况
-    if(endSpeed(w)>=1.4) reach++;                 // 溜放到位率：冬季末速 ≥ 1.4 m/s
-    if(speedAt(s,cfg.xRetarderI*cfg.L)>7.0) over++; // 超速率：夏季减速器Ⅰ入口 > 7 m/s
-  }
-  return {reach:reach/N*100, over:over/N*100, weights};
-}
-function gauss(){ let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
-/* 车流适应性车型抽样：空车=难行车、重车=易行车（与「车型管理」三基准车同一套参数）。
-   总重 Q 含自重（难行车 P70H棚车 30t、易行车 C70敞车满载 94t），绝不为 0；重量按正态 ±12% 离散模拟车流波动。
-   空车取难行车 σ=+1（基本阻力取上限）、重车取易行车 σ=−1（取下限），使「难/易」差异在阻力上同样体现。 */
-function trafficCar(pEmpty){
-  const base = Math.random() < pEmpty ? VEHICLES.hard : VEHICLES.easy;
-  const Q = clamp(base.Q * (1 + 0.12*gauss()), base.Q*0.8, base.Q*1.2);
-  return { Q, f: base.f, n: base.n, sigma: base.sigma };
-}
-
-function renderTrafficHist(weights){
-  const c=makeChart('chart-traffic-hist');
-  const xmin=20, xmax=118, nb=14, bw=(xmax-xmin)/nb;
-  const bins=[]; for(let i=0;i<nb;i++) bins.push({x0:xmin+i*bw, n:0});
-  weights.forEach(w=>{ const b=Math.floor((w-xmin)/bw); if(b>=0&&b<nb) bins[b].n++; });
-  const ymax=Math.max(...bins.map(b=>b.n))*1.15;
-  c.grid(xmin,xmax,0,ymax);
-  c.axes(xmin,xmax,0,ymax, v=>fmt(v,0), v=>fmt(v,0), '车辆总重 (t)', '频数 (辆)');
-  const pxw=(xmax-xmin)/nb;
-  bins.forEach((b,i)=>{ const px=c.x(xmin+i*pxw,xmin,xmax), h=b.n/ymax*(c.H-16-34); c.rect(px+pxw*0.08, c.H-34-h, pxw*0.84, h, '#2563eb'); });
-  c.text(c.W/2,13,'车辆总重分布（t）',{color:'#6b7280',size:11});
-}
-
-function renderTrafficCurve(){
-  const cfg=state.cfg;
-  const baseProf = state.selected?state.selected.prof:defaultProfile(cfg);
-  const curPe=parseInt($('traffic-empty').value);
-  const xs=[], reach=[], over=[];
-  const tests=[0,10,20,30,40,50,60,70,80];
-  tests.forEach(pe=>{
-    const pEmpty=pe/100; let r=0,ov=0; const N=150;
-    for(let i=0;i<N;i++){
-      const veh=trafficCar(pEmpty);               // 空车=难行车、重车=易行车
-      const w=simulate(baseProf,veh,cfg.wWinter,1.4), s=simulate(baseProf,veh,cfg.wSummer,1.9);
-      if(endSpeed(w)>=1.4)r++; if(speedAt(s,cfg.xRetarderI*cfg.L)>7)ov++;
-    }
-    xs.push(pe); reach.push(r/N*100); over.push(ov/N*100);
-  });
-  const ki=Math.max(0,Math.min(tests.length-1,Math.round(curPe/10)));
-  const yrng=series=>{ let lo=Math.min(...series), hi=Math.max(...series); const pad=(hi-lo)*0.15||5; lo=Math.max(0,lo-pad); hi=Math.min(100,hi+pad); return [lo,hi]; };
-  // 每个指标单独一张图：曲线 + 当前空车比例竖标线 + 当前值散点
-  function drawOne(id, color, series, ylabel, legendId, legendName){
-    const yrange=yrng(series), ylo=yrange[0], yhi=yrange[1];
-    const c=makeChart(id,{ml:60});
-    c.grid(0,80,ylo,yhi);
-    c.axes(0,80,ylo,yhi, v=>v+'%', v=>fmt(v,0)+'%', '空车比例 (%)', ylabel);
-    c.line(xs.map((x,i)=>[x,series[i]]),0,80,ylo,yhi,color,2);
-    c.line([[curPe,ylo],[curPe,yhi]],0,80,ylo,yhi,'#f59e0b',1.5,'4 3');
-    c.scatter([[curPe,series[ki]]],0,80,ylo,yhi,color,5);
-    c.text(c.x(curPe,0,80)+8, c.y(ylo,ylo,yhi)-6, `当前 ${curPe}%`, {color:'#f59e0b',size:10,anchor:'start'});
-    c.text(c.W/2,13, legendName, {color:'#6b7280',size:11});
-    $(legendId).innerHTML=`<span class="li"><span class="sw" style="background:${color}"></span>${legendName}</span><span class="li"><span class="sw" style="background:#f59e0b"></span>当前空车比例 ${curPe}%</span>`;
-  }
-  drawOne('chart-traffic-reach', '#2563eb', reach, '到位率 (%)', 'legend-traffic-reach', '溜放到位率');
-  drawOne('chart-traffic-over', '#dc2626', over, '超速率 (%)', 'legend-traffic-over', '超速率');
-}
-
-function renderTrafficRisk(){
-  const cfg=state.cfg;
-  const profA = state.selected?state.selected.prof:defaultProfile(cfg);   // 方案①：按难行车定峰（当前方案）
-  // 方案②（对照）：按中行车定峰 —— 同一坡形等比缩小峰高，使中行车（Q≈70t）冬季末速恰好 1.4 m/s，峰高明显低于方案①
-  let kLo=0.15, kHi=1.0;
-  for(let it=0; it<14; it++){
-    const k=(kLo+kHi)/2;
-    const s=simulate(profA.map(p=>({x:p.x,h:p.h*k})), VEHICLES.medium, cfg.wWinter, 1.4);
-    if(endSpeed(s)>=1.4) kHi=k; else kLo=k;
-  }
-  const kTyp=(kLo+kHi)/2;
-  const profB = profA.map(p=>({x:p.x, h:p.h*kTyp}));
-  const H1=profA[0].h, H2=profB[0].h;
-
-  // 蒙特卡洛：对每个空车比例，统计两种方案各自的两种失效模式
-  const tests=[0,10,20,30,40,50,60,70,80];
-  const xs=[], uA=[], uB=[], oA=[], oB=[], fA=[], fB=[];
-  tests.forEach(pe=>{
-    const pEmpty=pe/100; let ua=0,ub=0,oa=0,ob=0,fa=0,fb=0; const N=300;
-    for(let i=0;i<N;i++){
-      const veh=trafficCar(pEmpty);               // 空车=难行车、重车=易行车
-      const wA=simulate(profA,veh,cfg.wWinter,1.4), sA=simulate(profA,veh,cfg.wSummer,1.9);
-      const wB=simulate(profB,veh,cfg.wWinter,1.4), sB=simulate(profB,veh,cfg.wSummer,1.9);
-      const ua_=endSpeed(wA)<1.4, oa_=speedAt(sA,cfg.xRetarderI*cfg.L)>7.0;
-      const ub_=endSpeed(wB)<1.4, ob_=speedAt(sB,cfg.xRetarderI*cfg.L)>7.0;
-      if(ua_)ua++; if(ub_)ub++; if(oa_)oa++; if(ob_)ob++;
-      if(ua_||oa_)fa++; if(ub_||ob_)fb++;
-    }
-    xs.push(pe);
-    uA.push(ua/N*100); uB.push(ub/N*100);
-    oA.push(oa/N*100); oB.push(ob/N*100);
-    fA.push(fa/N*100); fB.push(fb/N*100);
-  });
-
-  const curPe=parseInt($('traffic-empty').value);
-  const ki=Math.max(0,Math.min(tests.length-1,Math.round(curPe/10)));
-  const nameA=`按难行车定峰 H=${fmt(H1,2)} m`, nameB=`按中行车定峰 H=${fmt(H2,2)} m`;
-  const CA='#2563eb', CB='#ea580c';
-
-  // 图① 溜不到位率（冬季末速 < 1.4 m/s）
-  (function(){
-    const c=makeChart('chart-risk-underreach',{ml:62});
-    c.grid(0,80,0,100);
-    c.axes(0,80,0,100, v=>v+'%', v=>v+'%', '空车比例 (%)', '溜不到位率 (%)');
-    c.line(xs.map((x,i)=>[x,uA[i]]),0,80,0,100,CA,2.2);
-    c.line(xs.map((x,i)=>[x,uB[i]]),0,80,0,100,CB,2.2);
-    c.line([[curPe,0],[curPe,100]],0,80,0,100,'#f59e0b',1.5,'4 3');
-    c.scatter([[curPe,uA[ki]]],0,80,0,100,CA,5);
-    c.scatter([[curPe,uB[ki]]],0,80,0,100,CB,5);
-    c.text(c.x(curPe,0,80)+8, c.y(0,0,100)-6, `当前 ${curPe}%`, {color:'#f59e0b',size:10,anchor:'start'});
-    $('legend-risk-underreach').innerHTML=`<span class="li"><span class="sw" style="background:${CA}"></span>${nameA}</span><span class="li"><span class="sw" style="background:${CB}"></span>${nameB}</span><span class="li"><span class="sw" style="background:#f59e0b"></span>当前空车比例 ${curPe}%</span>`;
-  })();
-
-  // 图② 超速率（减速器入口速度 > 7 m/s）
-  (function(){
-    const c=makeChart('chart-risk-over',{ml:62});
-    c.grid(0,80,0,100);
-    c.axes(0,80,0,100, v=>v+'%', v=>v+'%', '空车比例 (%)', '超速率 (%)');
-    c.line(xs.map((x,i)=>[x,oA[i]]),0,80,0,100,CA,2.2);
-    c.line(xs.map((x,i)=>[x,oB[i]]),0,80,0,100,CB,2.2);
-    c.line([[curPe,0],[curPe,100]],0,80,0,100,'#f59e0b',1.5,'4 3');
-    c.scatter([[curPe,oA[ki]]],0,80,0,100,CA,5);
-    c.scatter([[curPe,oB[ki]]],0,80,0,100,CB,5);
-    c.text(c.x(curPe,0,80)+8, c.y(0,0,100)-6, `当前 ${curPe}%`, {color:'#f59e0b',size:10,anchor:'start'});
-    $('legend-risk-over').innerHTML=`<span class="li"><span class="sw" style="background:${CA}"></span>${nameA}</span><span class="li"><span class="sw" style="background:${CB}"></span>${nameB}</span><span class="li"><span class="sw" style="background:#f59e0b"></span>当前空车比例 ${curPe}%</span>`;
-  })();
-
-  // 结论（随当前空车比例联动，两种失效模式 → 综合失效率）
-  $('traffic-conclusion').innerHTML=`
-    <strong>结论（当前空车比例 ${curPe}%）：</strong>
-    <ul class="dotlist">
-      <li><b style="color:${CA}">按难行车定峰</b>（峰高 ${fmt(H1,2)} m）：溜不到位率 <b>${fmt(uA[ki],1)}%</b>、超速率 <b>${fmt(oA[ki],1)}%</b> → 综合失效率 <b>${fmt(fA[ki],1)}%</b>（空车冬季有保证，<b>重车夏季易超速</b>）。</li>
-      <li><b style="color:${CB}">按中行车定峰</b>（峰高 ${fmt(H2,2)} m）：溜不到位率 <b>${fmt(uB[ki],1)}%</b>、超速率 <b>${fmt(oB[ki],1)}%</b> → 综合失效率 <b>${fmt(fB[ki],1)}%</b>（重车夏季安全，<b>空车冬季易溜不到位</b>）。</li>
-    </ul>
-    <div class="mt">峰高是一对矛盾：<b>高峰高</b>保证空车到位、但重车夏季超速；<b>低峰高</b>重车安全、但空车溜不到位。因此峰高不能固定取极值，而应<b>随实际空重比取平衡值</b>——这正是「车流适应性」的价值所在。</div>`;
-}
-
-function refreshTraffic(){
-  const cfg=state.cfg||makeCfg();
-  state.cfg=cfg;
-  $('traffic-empty-val').textContent=$('traffic-empty').value+'%';
-  const res=runTraffic();
-  renderTrafficHist(res.weights);
-  renderTrafficCurve();
-  renderTrafficRisk();
-}
-
 /* ---------- 初始方案生成（设计输入 → 输出联动） ---------- */
 function regenInitial(){
   state.cfg=makeCfg();
@@ -2551,7 +2325,6 @@ function regenInitial(){
   state.archive=[{x:defaultVec(state.cfg),obj:m.obj,prof,segs:m.segs,grades:m.grades,meta:m.meta,viol:m.violations,pen:m.penalty,label:'初始方案（规范模板）'}];
   state.selected=state.archive[0];
   renderProfilePanel(); syncSelected(); renderParetoTable();
-  refreshTraffic();
   $('input-status').textContent='已按当前输入生成初始方案（峰高 '+fmt(prof[0].h,2)+' m）';
 }
 
@@ -2560,14 +2333,11 @@ function loadExampleInputs(){
   const set=(id,v)=>{ const el=$(id); if(el){ el.value=v; } };
   set('in-lines','16'); set('in-daily','2000'); set('in-machines','2');
   set('in-region','华北'); set('in-twinter','-10'); set('in-vwind','4');
-  set('in-empty','30'); set('in-heavy','70'); set('in-peak','1.3');
+  set('in-peak','1.3');
   set('in-hmax','5.5'); set('in-hmin','4.0'); set('in-length','380'); set('in-segments','4');
   set('in-nrev','6'); set('in-nfwd','2'); set('in-ndia','1'); set('in-nslip','1');
   set('in-crev','24'); set('in-cfwd','12'); set('in-cdia','12'); set('in-cslip','48'); set('in-ccurve','8');
   ['in-twinter','in-vwind','in-hmax','in-hmin','in-length'].forEach(id=>{ const el=$(id); if(el) updateRangeLabel(el); });
-  // 空重比例与车流滑块联动同步
-  const e=parseInt($('in-empty').value)||0; $('in-heavy').value=100-e;
-  const te=$('traffic-empty'); if(te){ te.value=e; const tv=$('traffic-empty-val'); if(tv) tv.textContent=e+'%'; }
 }
 
 /* ---------- 事件绑定 ---------- */
@@ -2600,26 +2370,11 @@ function bindEvents(){
   const region=$('in-region');
   const regionMap={华北:[-10,4],东北:[-25,5],华东:[0,3],华南:[5,2],西北:[-20,5]};
   region.addEventListener('change',()=>{ const r=regionMap[region.value]; $('in-twinter').value=r[0]; $('in-vwind').value=r[1]; updateRangeLabel($('in-twinter')); updateRangeLabel($('in-vwind')); });
-  // 空重比例联动（设计输入 ↔ 车流分析滑块，空+重=100）
-  const syncEmpty=()=>{ const v=parseInt($('in-empty').value)||0; $('in-heavy').value=100-v; $('traffic-empty').value=v; $('traffic-empty-val').textContent=v+'%'; };
-  const syncHeavy=()=>{ const v=parseInt($('in-heavy').value)||0; $('in-empty').value=100-v; $('traffic-empty').value=100-v; $('traffic-empty-val').textContent=(100-v)+'%'; };
-  $('in-empty').addEventListener('input',syncEmpty);
-  $('in-empty').addEventListener('change',syncEmpty);
-  $('in-heavy').addEventListener('input',syncHeavy);
-  $('in-heavy').addEventListener('change',syncHeavy);
-  // 车流滑块：实时更新标签并（防抖）重算溜放结果
-  let trafficTimer=null;
-  $('traffic-empty').addEventListener('input',()=>{
-    $('traffic-empty-val').textContent=$('traffic-empty').value+'%';
-    clearTimeout(trafficTimer);
-    trafficTimer=setTimeout(()=>{ if(!$('btn-run2').disabled) refreshTraffic(); },120);
-  });
-  $('btn-traffic-run').addEventListener('click',refreshTraffic);
   // 设计输入实时联动：任一输入变化即重算初始方案与全部输出（防抖；优化运行中不触发）
   // 调车线规模变化时，自动重推各型道岔默认数（可再手动编辑）
   const syncSwitchCounts=()=>{ const tp=trackParams(parseInt($('in-lines').value)||16); const v=['in-nrev','in-nfwd','in-ndia','in-nslip'].map(id=>$(id)); const vals=[tp.nRev,tp.nFwd,tp.nDia,tp.nSlip]; vals.forEach((val,i)=>{ if(v[i]) v[i].value=val; }); };
   $('in-lines').addEventListener('change',()=>{ syncSwitchCounts(); scheduleRegen(); });
-  const designInputIds=['in-lines','in-daily','in-machines','in-region','in-twinter','in-vwind','in-empty','in-heavy','in-peak','in-hmax','in-hmin','in-length','in-segments','in-nrev','in-nfwd','in-ndia','in-nslip','in-ccurve','in-crev','in-cfwd','in-cdia','in-cslip'];
+  const designInputIds=['in-lines','in-daily','in-machines','in-region','in-twinter','in-vwind','in-peak','in-hmax','in-hmin','in-length','in-segments','in-nrev','in-nfwd','in-ndia','in-nslip','in-ccurve','in-crev','in-cfwd','in-cdia','in-cslip'];
   let regenTimer=null;
   const scheduleRegen=()=>{ if($('btn-run2').disabled) return; clearTimeout(regenTimer); regenTimer=setTimeout(regenInitial,150); };
   designInputIds.forEach(id=>{ const el=$(id); if(!el) return; el.addEventListener('input',scheduleRegen); el.addEventListener('change',scheduleRegen); });
@@ -2716,7 +2471,6 @@ function refreshVisibleCharts(panelId){
   if(panelId==='p-optimize'){ if(state.archive.length){ renderPareto(); renderConvergence(); } }
   else if(panelId==='p-profile'){ if(state.selected) renderProfileDetail(state.selected, state.cfg); }
   else if(panelId==='p-input'){ if(state.selected) renderPlan(state.selected, state.cfg); }
-  else if(panelId==='p-traffic'){ refreshTraffic(); }
   else if(panelId==='p-check'){ if(state.selected){ renderSpeedChart(state.selected.meta,state.cfg); renderCheckList(state.selected.meta,state.cfg); renderCapacity(state.selected.meta,state.cfg); renderAdvice(state.selected.meta,state.cfg); } }
   else if(panelId==='p-history'){ renderHistory(); }
 }
@@ -2744,7 +2498,7 @@ function saveCurrent(label, algo){
     x: (s.x?s.x:defaultVec(cfg)).slice(),
     inputs:{
       lines:$('in-lines').value, daily:$('in-daily').value, region:$('in-region').value,
-      tWinter:$('in-twinter').value, vWind:$('in-vwind').value, empty:$('in-empty').value,
+      tWinter:$('in-twinter').value, vWind:$('in-vwind').value,
       segments:$('in-segments').value, length:$('in-length').value,
       hmin:$('in-hmin').value, hmax:$('in-hmax').value,
       obj: cfg.objIdx.map(o=>OBJDEF[o].name)
