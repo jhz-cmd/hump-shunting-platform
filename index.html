@@ -81,6 +81,16 @@ textarea.inp{height:auto;min-height:110px;padding:10px;line-height:1.6;resize:ve
 .algo-note .it{margin-top:3px}
 .algo-note .it b{color:var(--text)}
 .algo-note .tip{margin-top:7px;padding-top:7px;border-top:1px dashed var(--primary-200);color:var(--text-2)}
+.algo-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.algo-card{background:var(--primary-50);border:1px solid var(--primary-100);border-radius:12px;padding:18px 14px 14px;text-align:center;transition:transform .18s ease,box-shadow .18s ease}
+.algo-card:hover{transform:translateY(-3px);box-shadow:0 12px 24px rgba(37,99,235,.16)}
+.algo-mascot{width:98px;height:98px;margin:0 auto 12px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 32% 28%,#ffffff 0%,#dbeafe 46%,#bfdbfe 100%);box-shadow:inset 0 -6px 14px rgba(37,99,235,.12)}
+.algo-mascot svg{width:80px;height:80px}
+.algo-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:7px}
+.algo-desc{font-size:12.5px;color:var(--text-2);line-height:1.75;text-align:left}
+.algo-desc b{color:var(--text)}
+.algo-tip{margin-top:12px;border:1px dashed var(--primary-200);border-radius:9px;background:#fff;padding:10px 14px;font-size:12px;color:var(--text-2);line-height:1.75}
+@media(max-width:1080px){.algo-cards{grid-template-columns:1fr}}
 .row{display:flex;gap:12px}
 .row .field{flex:1}
 .inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -502,13 +512,24 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
       <div class="hint">
         优化变量：<b>峰高 H</b>、<b>各变坡点横向坐标 x</b>、<b>各变坡点高度 h</b>（<b>道岔位置固定</b>，不纳入优化变量）。支持 MOPSO / NSGA-II / ALNS 三种多目标算法，适配连续纵断面变量。
       </div>
-      <div class="algo-note">
-        <div class="t">三种算法的适用条件</div>
-        <div class="it"><b>MOPSO 粒子群</b>：连续变量、收敛快、易早熟 —— 适合快速出一组 Pareto 解做<b>初步比选</b>。</div>
-        <div class="it"><b>NSGA-II 遗传算法</b>：全局搜索强、多样性好、计算量大 —— 适合<b>复杂非线性 / 多峰</b>、追求前沿完整。</div>
-        <div class="it"><b>ALNS 大邻域搜索</b>：局部破坏-修复、算子自适应 —— 适合<b>已有较好初始解</b>后精调逼近最优。</div>
-        <div class="tip">建议：无现成方案先点「生成初始方案」，再用 <b>MOPSO / NSGA-II</b> 全局搜；拿到初解后用 <b>ALNS</b> 精修。</div>
+      <div class="algo-cards">
+        <div class="algo-card">
+          <div class="algo-mascot"><svg viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="50" cy="52" rx="41" ry="13" fill="none" stroke="#93c5fd" stroke-width="2" stroke-dasharray="4 5"/><circle cx="15" cy="40" r="6" fill="#93c5fd"/><circle cx="85" cy="38" r="5" fill="#60a5fa"/><circle cx="13" cy="66" r="4" fill="#bfdbfe"/><circle cx="87" cy="68" r="7" fill="#2563eb"/><circle cx="50" cy="52" r="20" fill="#2563eb"/><circle cx="43" cy="48" r="2.6" fill="#fff"/><circle cx="57" cy="48" r="2.6" fill="#fff"/><path d="M43 57 Q50 63 57 57" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M50 19 l2.9 5.8 6.4.9 -4.6 4.5 1.1 6.3 -5.8-3 -5.8 3 1.1-6.3 -4.6-4.5 6.4-.9 z" fill="#f59e0b"/></svg></div>
+          <div class="algo-name">MOPSO 粒子群</div>
+          <div class="algo-desc">连续变量、收敛快、易早熟 —— 适合快速出一组 Pareto 解做<b>初步比选</b>。</div>
+        </div>
+        <div class="algo-card">
+          <div class="algo-mascot"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="15" r="10" fill="#2563eb"/><circle cx="46" cy="13" r="2" fill="#fff"/><circle cx="54" cy="13" r="2" fill="#fff"/><path d="M46 18 Q50 21 54 18" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M38 26 C38 44 62 44 62 62 C62 80 38 80 38 92" fill="none" stroke="#60a5fa" stroke-width="5" stroke-linecap="round"/><path d="M62 26 C62 44 38 44 38 62 C38 80 62 80 62 92" fill="none" stroke="#2563eb" stroke-width="5" stroke-linecap="round"/><line x1="40" y1="39" x2="60" y2="39" stroke="#f59e0b" stroke-width="3"/><line x1="40" y1="52" x2="60" y2="52" stroke="#f59e0b" stroke-width="3"/><line x1="40" y1="65" x2="60" y2="65" stroke="#f59e0b" stroke-width="3"/><line x1="40" y1="78" x2="60" y2="78" stroke="#f59e0b" stroke-width="3"/></svg></div>
+          <div class="algo-name">NSGA-II 遗传算法</div>
+          <div class="algo-desc">全局搜索强、多样性好、计算量大 —— 适合<b>复杂非线性 / 多峰</b>、追求前沿完整。</div>
+        </div>
+        <div class="algo-card">
+          <div class="algo-mascot"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="20" cy="27" r="3" fill="#bfdbfe"/><circle cx="33" cy="19" r="3" fill="#93c5fd"/><circle cx="24" cy="42" r="3" fill="#93c5fd"/><circle cx="46" cy="45" r="24" fill="#e0f2fe" stroke="#2563eb" stroke-width="5"/><circle cx="39" cy="41" r="2.6" fill="#1e3a8a"/><circle cx="53" cy="41" r="2.6" fill="#1e3a8a"/><path d="M40 49 Q46 54 52 49" stroke="#1e3a8a" stroke-width="2.4" fill="none" stroke-linecap="round"/><line x1="65" y1="64" x2="85" y2="84" stroke="#f59e0b" stroke-width="8" stroke-linecap="round"/></svg></div>
+          <div class="algo-name">ALNS 大邻域搜索</div>
+          <div class="algo-desc">局部破坏-修复、算子自适应 —— 适合<b>已有较好初始解</b>后精调逼近最优。</div>
+        </div>
       </div>
+      <div class="algo-tip">建议：无现成方案先点「生成初始方案」，再用 <b>MOPSO / NSGA-II</b> 全局搜；拿到初解后用 <b>ALNS</b> 精修。</div>
       <div class="toolbar mt">
         <button class="btn ghost" id="btn-init">生成初始方案（规范模板）</button>
         <span class="muted" id="input-status">就绪</span>
