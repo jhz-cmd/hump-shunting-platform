@@ -59,6 +59,9 @@ a{color:var(--primary);text-decoration:none}
 .card h3{font-size:15px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
 .card h3 .dot{width:8px;height:8px;border-radius:50%;background:var(--primary);flex:none}
 .card .sub{font-size:12.5px;color:var(--text-2);margin-bottom:14px}
+h3[data-tip]{position:relative;cursor:help}
+h3[data-tip]::after{content:attr(data-tip);position:absolute;left:0;top:calc(100% + 8px);max-width:360px;width:max-content;background:#0f172a;color:#e2e8f0;font-size:12px;line-height:1.6;font-weight:400;padding:7px 12px;border-radius:8px;box-shadow:0 8px 24px rgba(15,23,42,.3);opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .16s ease,transform .16s ease,visibility .16s;pointer-events:none;z-index:60;white-space:normal}
+h3[data-tip]:hover::after{opacity:1;visibility:visible;transform:translateY(0)}
 .card h4{font-size:13px;font-weight:700;color:var(--text);margin:16px 0 8px}
 .section-title{font-size:17px;font-weight:800;margin:22px 0 12px;display:flex;align-items:center;gap:9px}
 .section-title .bar{width:4px;height:20px;border-radius:3px;background:linear-gradient(var(--primary),var(--primary-600))}
@@ -342,8 +345,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
     <div class="section-title"><span class="bar"></span>设计输入</div>
     <div class="grid cols-2">
       <div class="card">
-        <h3><span class="dot"></span>驼峰规模</h3>
-        <div class="sub">决定道岔数量、溜放线数量与配套设备等级</div>
+        <h3 data-tip="决定道岔数量、溜放线数量与配套设备等级"><span class="dot"></span>驼峰规模</h3>
         <div class="row">
           <div class="field">
             <label>调车线数量</label>
@@ -373,8 +375,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
       </div>
 
       <div class="card">
-        <h3><span class="dot"></span>气象条件</h3>
-        <div class="sub">控制峰高的两个极端工况：冬季溜得动、夏季不超速</div>
+        <h3 data-tip="控制峰高的两个极端工况：冬季溜得动、夏季不超速"><span class="dot"></span>气象条件</h3>
         <div class="row">
           <div class="field">
             <label>建设地区</label>
@@ -401,8 +402,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
 
     <div class="grid cols-2 mt">
       <div class="card">
-        <h3><span class="dot"></span>解体能力参数</h3>
-        <div class="sub">用于把高峰小时能力折算成日解体能力</div>
+        <h3 data-tip="用于把高峰小时能力折算成日解体能力"><span class="dot"></span>解体能力参数</h3>
         <div class="row">
           <div class="field">
             <label>高峰小时系数 <span class="unit">倍</span></label>
@@ -413,8 +413,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
       </div>
 
       <div class="card">
-        <h3><span class="dot"></span>地形限制 &amp; 溜放距离</h3>
-        <div class="sub">地形约束与纵断面总长度</div>
+        <h3 data-tip="地形约束与纵断面总长度"><span class="dot"></span>地形限制 &amp; 溜放距离</h3>
         <div class="row">
           <div class="field">
             <label>最大峰高限制 <span class="unit">m</span></label>
@@ -472,8 +471,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
   <div class="panel" id="p-optimize">
     <div class="section-title"><span class="bar"></span>多目标自动优化引擎</div>
     <div class="card">
-      <h3><span class="dot"></span>优化设置</h3>
-      <div class="sub">配置优化算法、坡段数与种群规模；<b>优化目标在下方「优化目标」卡片选择</b></div>
+      <h3 data-tip="配置优化算法、坡段数与种群规模；优化目标在下方「优化目标」卡片选择"><span class="dot"></span>优化设置</h3>
       <div class="row">
         <div class="field">
           <label>坡段数量（变坡点数量）</label>
@@ -578,15 +576,13 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
         <div class="legend" id="legend-pareto"></div>
       </div>
       <div class="card">
-        <h3><span class="dot"></span>收敛曲线</h3>
-        <div class="sub">Pareto 解数量随迭代次数的增长</div>
+        <h3 data-tip="Pareto 解数量随迭代次数的增长"><span class="dot"></span>收敛曲线</h3>
         <div class="chart-box" id="chart-conv"></div>
       </div>
     </div>
 
     <div class="card mt">
-      <h3><span class="dot"></span>Pareto 最优方案集</h3>
-      <div class="sub">点击行选中方案，联动「纵断面方案」「检算报告」标签页</div>
+      <h3 data-tip="点击行选中方案，联动「纵断面方案」「检算报告」标签页"><span class="dot"></span>Pareto 最优方案集</h3>
       <div style="max-height:420px;overflow:auto">
         <table id="pareto-table">
           <thead><tr id="pareto-head"></tr></thead>
@@ -620,8 +616,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
         <div class="chart-hint">悬停图表可查看该里程处的高程 / 坡度，并与下方「能高线」里程联动。</div>
       </div>
       <div class="card">
-        <h3><span class="dot"></span>坡段参数表</h3>
-        <div class="sub">各坡段长度、坡度、变坡点高程</div>
+        <h3 data-tip="各坡段长度、坡度、变坡点高程"><span class="dot"></span>坡段参数表</h3>
         <div style="max-height:380px;overflow:auto">
           <table id="profile-table">
             <thead><tr><th>坡段</th><th>性质</th><th>长度(m)</th><th>坡度(‰)</th><th>起点高程(m)</th><th>终点高程(m)</th></tr></thead>
@@ -655,8 +650,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
         <div class="legend" id="legend-speed"></div>
       </div>
       <div class="card">
-        <h3><span class="dot"></span>规范条文校核</h3>
-        <div class="sub">实时检查 TB10062-2018 与教材强制条文</div>
+        <h3 data-tip="实时检查 TB10062-2018 与教材强制条文"><span class="dot"></span>规范条文校核</h3>
         <div id="check-list"></div>
       </div>
     </div>
