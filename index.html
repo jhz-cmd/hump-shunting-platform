@@ -70,6 +70,7 @@ a{color:var(--primary);text-decoration:none}
 .inp,.sel{width:100%;height:36px;padding:0 11px;border:1px solid var(--border);border-radius:7px;font-size:13.5px;color:var(--text);background:#fff;transition:.15s;font-family:var(--font)}
 .inp:focus,.sel:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-100)}
 .sel{cursor:pointer}
+textarea.inp{height:auto;min-height:110px;padding:10px;line-height:1.6;resize:vertical;font-family:ui-monospace,Consolas,monospace}
 .unit{color:var(--text-3);font-size:12px;margin-left:3px}
 .hint{font-size:11.5px;color:var(--text-3);margin-top:4px}
 .algo-note{margin-top:12px;border:1px solid var(--primary-100);background:var(--primary-50);border-radius:8px;padding:11px 13px;font-size:12px;color:var(--text-2);line-height:1.75}
@@ -282,6 +283,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
       <div class="cover-feat"><div class="n"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg></span>多目标优化</div><div class="d">PSO / ALNS / NSGA-II 自动寻优</div></div>
       <div class="cover-feat"><div class="n"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20 L8 12 L11 15 L15 6 L21 10"/></svg></span>纵断面方案</div><div class="d">凹形「前陡后缓」纵断面、峰高与能高线分析</div></div>
       <div class="cover-feat"><div class="n"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v3H9z"/><rect x="6" y="5" width="12" height="15" rx="2"/><path d="M9 13 l2 2 l4 -4"/></svg></span>检算报告</div><div class="d">规范约束逐项自动校核</div></div>
+      <div class="cover-feat"><div class="n"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V8"/><path d="M20 19V4"/><path d="M12 19v-6"/><path d="M4 8l8 7 8-7"/></svg></span>解体与溜放分配</div><div class="d">解体车列录入、分类股道分配、平面调车初始状态导出</div></div>
       <div class="cover-feat"><div class="n"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11 l4 4 l4 -4"/><path d="M4 19 h16"/></svg></span>结果存档</div><div class="d">方案本地保存、导出与载入</div></div>
     </div>
 
@@ -331,7 +333,8 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
     <div class="tab" data-panel="p-optimize"><span class="num">2</span>多目标优化</div>
     <div class="tab" data-panel="p-profile"><span class="num">3</span>纵断面方案</div>
     <div class="tab" data-panel="p-check"><span class="num">4</span>检算报告</div>
-    <div class="tab" data-panel="p-history"><span class="num">5</span>结果存档</div>
+    <div class="tab" data-panel="p-classify"><span class="num">5</span>解体与溜放分配</div>
+    <div class="tab" data-panel="p-history"><span class="num">6</span>结果存档</div>
   </div>
 
   <!-- ================= 1. 设计输入 ================= -->
@@ -669,7 +672,62 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
     </div>
   </div>
 
-  <!-- ================= 5. 结果存档 ================= -->
+  <!-- ================= 5. 解体与溜放分配（驼峰 → 平面调车衔接） ================= -->
+  <div class="panel" id="p-classify">
+    <div class="section-title"><span class="bar"></span>解体与溜放分配（驼峰 → 平面调车衔接）</div>
+    <div class="card">
+      <h3><span class="dot"></span>衔接说明</h3>
+      <div class="sub">驼峰解体只是调车作业的前半程——车辆经峰顶溜放进入各分类线（调车线）后，还需由机车在峰尾牵出线进行平面调车（取车、推进、转线、编组）。本模块把「驼峰纵断面设计」与「平面调车」通过统一的车辆状态交接接口衔接起来。</div>
+      <div class="algo-note">
+        <div class="t">分层衔接模型（不做单一大算法）</div>
+        <div class="it">① 驼峰层：峰高 / 纵断面 / 减速设备设计（本平台前 4 个标签页）；</div>
+        <div class="it">② 溜放分配层：决定每辆车溜入哪条分类线（本模块）；</div>
+        <div class="it">③ 平面调车层：后续取送、整理与编组（同学平台），一键导入本模块导出的 JSON 初始状态。</div>
+        <div class="tip">分配依据（教材 / 规范 / 知网）：同一编组去向（组号）车辆尽量溜入同一分类线，减少后续调车钩数与重复改编；禁溜车（危险货物、超限、特种车等）与禁过峰车不溜放，经禁溜线或机车送车。</div>
+      </div>
+    </div>
+
+    <div class="grid cols-2 mt">
+      <div class="card">
+        <h3><span class="dot"></span>① 待解体车列录入</h3>
+        <div class="sub">每行一辆车：<code>编号 车型 去向 长度 [禁]</code>；去向＝编组去向（组号）。禁溜 / 禁过峰车不溜放、由机车送车。</div>
+        <textarea class="inp" id="classify-cars-in" style="height:240px;font-size:12.5px"></textarea>
+        <div class="toolbar mt">
+          <button class="btn primary" id="btn-classify-run">解析并分配</button>
+          <button class="btn ghost" id="btn-classify-example">恢复默认示例</button>
+        </div>
+        <div class="hint">车型可填 C70 / P70H / X70 / G70 / NX70 / D型 等，未写长度时按车型自动取默认车长（P70H 16.4、C70/X70/NX70 14.0、G70 12.0、D型 20.0 m）。禁溜标记：<code>禁</code> / <code>禁溜</code> / <code>禁过峰</code>。</div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>② 分类线（调车线）配置</h3>
+        <div class="sub">分类线按编组去向固定使用；去向数多于股道数时需合用，产生混合车流、增加二次解体。</div>
+        <div class="row">
+          <div class="field"><label>分类线数量 <span class="unit">条</span></label><input class="inp" id="classify-ntrack" type="number" value="4" min="2" max="8" step="1"></div>
+          <div class="field"><label>单线有效长 <span class="unit">m</span></label><input class="inp" id="classify-efflen" type="number" value="300" min="100" max="900" step="10"></div>
+        </div>
+        <div class="hint">股道有效长不足时，溜放车辆停放不下会形成「压车 / 堵车」，需减少溜放或借用相邻分类线（借用分类线可显著降低后续平面调车钩数）。</div>
+      </div>
+    </div>
+
+    <div class="grid cols-2 mt">
+      <div class="card">
+        <h3><span class="dot"></span>③ 分配结果与各股道占用</h3>
+        <div id="classify-track-result"><div class="empty">点击「解析并分配」生成分配结果。</div></div>
+      </div>
+      <div class="card">
+        <h3><span class="dot"></span>④ 导出平面调车初始状态（JSON）</h3>
+        <div class="sub">统一数据格式，供平面调车平台「一键导入」，自动生成初始的「股道—车辆—顺序」状态。</div>
+        <textarea class="inp" id="classify-json-out" style="height:250px;font-size:12px" readonly></textarea>
+        <div class="toolbar mt">
+          <button class="btn primary" id="btn-classify-copy">复制 JSON</button>
+          <button class="btn ghost" id="btn-classify-download">下载 .json</button>
+        </div>
+        <div class="hint">JSON 三部分：<code>yard</code>（股道配置）、<code>cars</code>（逐辆车：编号 / 车型 / 长度 / 重量 / 去向 / 分类股道 / 顺序 / 难易行 / 是否禁溜）、<code>humpResult</code>（峰高 / 推峰速度 / 溜放顺序 / 预计完成时间，取自当前纵断面方案）。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 6. 结果存档 ================= -->
   <div class="panel" id="p-history">
     <div class="section-title"><span class="bar"></span>结果存档</div>
     <div class="card">
@@ -2463,6 +2521,14 @@ function bindEvents(){
   $('btn-import-history').addEventListener('click',()=>$('file-import').click());
   $('file-import').addEventListener('change',e=>{ if(e.target.files.length) importHistoryFile(e.target.files[0]); e.target.value=''; });
   $('btn-clear-history').addEventListener('click',clearHistory);
+  // 解体与溜放分配（驼峰 → 平面调车衔接）
+  $('classify-cars-in').value=DEFAULT_CLASSIFY_CARS;
+  $('btn-classify-run').addEventListener('click',renderClassify);
+  $('btn-classify-example').addEventListener('click',()=>{ $('classify-cars-in').value=DEFAULT_CLASSIFY_CARS; renderClassify(); });
+  $('btn-classify-copy').addEventListener('click',copyClassifyJSON);
+  $('btn-classify-download').addEventListener('click',downloadClassifyJSON);
+  ['classify-ntrack','classify-efflen'].forEach(id=>{ $(id).addEventListener('input',renderClassify); $(id).addEventListener('change',renderClassify); });
+  renderClassify();
 }
 /* 切到某标签页时按真实容器宽度重绘对应图表 */
 function refreshVisibleCharts(panelId){
@@ -2472,9 +2538,158 @@ function refreshVisibleCharts(panelId){
   else if(panelId==='p-profile'){ if(state.selected) renderProfileDetail(state.selected, state.cfg); }
   else if(panelId==='p-input'){ if(state.selected) renderPlan(state.selected, state.cfg); }
   else if(panelId==='p-check'){ if(state.selected){ renderSpeedChart(state.selected.meta,state.cfg); renderCheckList(state.selected.meta,state.cfg); renderCapacity(state.selected.meta,state.cfg); renderAdvice(state.selected.meta,state.cfg); } }
+  else if(panelId==='p-classify'){ renderClassify(); }
   else if(panelId==='p-history'){ renderHistory(); }
 }
 function switchTab(id){ document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.panel===id)); document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id)); refreshVisibleCharts(id); }
+
+/* ---------- 解体与溜放分配（驼峰 → 平面调车衔接） ----------
+   衔接依据（教材/规范/知网）：
+   · 同一编组去向（组号）车辆尽量溜入同一分类线，减少后续平面调车钩数与重复改编；
+   · 禁溜车（危险货物、超限、特种车等）与禁过峰车不溜放，经禁溜线或机车送车；
+   · 股道有效长不足或去向数多于股道数时，需合用/借用分类线，产生混合车流、二次解体。
+   统一评价指标（公式仅存于注释，不显示在界面）：
+     min F = α·T_hump + β·T_flat + γ·N_hooks + δ·N_moved + ε·C_equipment + λ·P_risk
+   其中 T_hump 驼峰解体时间、T_flat 平面调车时间、N_hooks 调车钩数、N_moved 重复调移车数、
+   C_equipment 驼峰/减速器工程成本、P_risk 超速·途停·追钩·进路冲突·死锁惩罚。 */
+const CAR_TYPE_META = {
+  'P70H':{len:16.4, weight:30, run:'difficult'},   // 棚车（空/不满载）→ 难行车
+  'C70': {len:14.0, weight:70, run:'medium'},       // 敞车（不满载）→ 中行车
+  'X70': {len:14.0, weight:70, run:'medium'},       // 敞车
+  'G70': {len:12.0, weight:50, run:'medium'},       // 罐车（常载危险货物→禁溜）
+  'NX70':{len:14.0, weight:70, run:'medium'},       // 平车
+  'D型': {len:20.0, weight:60, run:'difficult'}     // 落下孔/凹底（超限→禁过峰）
+};
+const TRACK_NAMES=['I','II','III','IV','V','VI','VII','VIII'];
+const DEFAULT_CLASSIFY_CARS =
+`C01 C70 A 14.0
+C02 P70H B 16.4
+C03 C70 A 14.0
+C04 G70 C 12.0 禁
+C05 P70H C 16.4
+C06 C70 B 14.0
+C07 X70 A 14.0
+C08 P70H D 16.4
+C09 C70 B 14.0
+C10 D型 D 20.0 禁过峰
+C11 P70H A 16.4
+C12 C70 D 14.0`;
+
+function parseClassifyCars(text){
+  const cars=[];
+  text.split(/\r?\n/).forEach(line=>{
+    const s=line.replace(/#.*$/,'').trim();
+    if(!s) return;
+    const p=s.split(/[\s,，]+/).filter(Boolean);
+    if(p.length<3) return;
+    const id=p[0], type=p[1], dest=p[2];
+    const tm=CAR_TYPE_META[type]||{len:14.0,weight:60,run:'medium'};
+    const length=(p.length>=4&&!isNaN(parseFloat(p[3])))?parseFloat(p[3]):tm.len;
+    const flag=(p.slice(4).join('')||'');
+    let forbid=false, reason='';
+    if(flag && (/禁/.test(flag)||/x/i.test(flag))){ forbid=true; reason=/过峰/.test(flag)?'禁过峰（超限/特种车）':'禁溜（危险货物/特种车）'; }
+    cars.push({id,type,dest,length,weight:tm.weight,run:tm.run,forbid,reason});
+  });
+  return cars;
+}
+
+function classifyAssign(cars, nTrack, effLen){
+  const names=TRACK_NAMES.slice(0, nTrack);
+  const destList=[]; const destTrack={};
+  cars.forEach(c=>{ if(c.dest && destTrack[c.dest]===undefined){ destTrack[c.dest]=null; destList.push(c.dest); } });
+  destList.forEach((d,i)=>{ destTrack[d]=names[i % nTrack]; });   // 去向→股道（去向多时轮转合用）
+  const tracks={}; names.forEach(n=>{ tracks[n]={id:n, effLen, cars:[], dests:[]}; });
+  const forbidden=[];
+  cars.forEach((c,idx)=>{
+    c.order=idx+1;
+    c.classificationTrack=destTrack[c.dest]||names[0];
+    if(c.forbid){ c.sentByLocomotive=true; forbidden.push(c); }
+    const tk=tracks[c.classificationTrack];
+    tk.cars.push(c); if(!tk.dests.includes(c.dest)) tk.dests.push(c.dest);
+  });
+  const warnings=[];
+  names.forEach(n=>{
+    const tk=tracks[n];
+    const total=tk.cars.reduce((s,c)=>s+c.length,0);
+    const occ=total + (tk.cars.length>1 ? (tk.cars.length-1)*1.0 : 0);   // 含车钩间隙 ~1 m/辆
+    tk.occLen=occ;
+    if(occ>effLen) warnings.push(n+'道 占用 '+fmt(occ,1)+' m 超过有效长 '+effLen+' m，需借用相邻分类线或减少溜放');
+    if(tk.dests.length>1) warnings.push(n+'道 混有 '+tk.dests.length+' 个去向（'+tk.dests.join('/')+'），编组时需二次解体/整理');
+  });
+  return {cars, tracks, names, forbidden, warnings};
+}
+
+function buildClassifyJSON(r, nTrack, effLen){
+  const cfg=state.cfg, sel=state.selected;
+  const H = (sel&&sel.prof) ? sel.prof[0].h : (cfg ? defaultProfile(cfg)[0].h : 4.31);
+  const vPush = (sel&&sel.meta) ? (sel.meta.vCap||sel.meta.capacity||2.17) : 2.17;
+  const L = cfg ? (cfg.L||380) : 380;
+  const cars = r.cars.map(c=>({
+    id:c.id, type:c.type, length:Math.round(c.length*10)/10, weight:c.weight,
+    destination:c.dest, classificationTrack:c.classificationTrack, order:c.order,
+    runningClass:c.run, forbidden:!!c.forbid, note:c.forbid?(c.reason||'禁溜'):''
+  }));
+  const totalLen = cars.reduce((s,c)=>s+c.length,0) + (cars.length>1?(cars.length-1)*1.0:0);
+  const estTime = Math.round(totalLen/Math.max(1.0,vPush) + cars.length*4);   // 走行时间 + 每钩摘钩间隔约 4 s（教学演示估算）
+  return JSON.stringify({
+    yard:{ trackCount:nTrack, leadTrackLength:L, tracks:r.names.map(n=>({id:n, effectiveLength:effLen})) },
+    cars: cars,
+    humpResult:{ humpHeight:Math.round(H*100)/100, pushSpeed:Math.round(vPush*100)/100, releaseSequence:r.cars.map(c=>c.id), estimatedCompletionTime:estTime }
+  }, null, 2);
+}
+
+function renderClassify(){
+  const box=$('classify-track-result'); if(!box) return;
+  const text=$('classify-cars-in').value;
+  const nTrack=clamp(parseInt($('classify-ntrack').value)||4,2,8);
+  const effLen=clamp(parseInt($('classify-efflen').value)||300,100,900);
+  const cars=parseClassifyCars(text);
+  if(!cars.length){
+    box.innerHTML='<div class="empty">未解析到车辆——请按「编号 车型 去向 长度 [禁]」格式每行录入一辆。</div>';
+    $('classify-json-out').value=''; return;
+  }
+  const r=classifyAssign(cars, nTrack, effLen);
+  let html='<table><thead><tr><th>编号</th><th>车型</th><th>去向</th><th>长度 m</th><th>难/易行</th><th>状态</th><th>分类股道</th><th>股道内顺序</th></tr></thead><tbody>';
+  r.cars.forEach(c=>{
+    const inTrack=r.tracks[c.classificationTrack].cars.indexOf(c)+1;
+    const st=c.forbid
+      ? '<span class="badge-row badge warn">'+esc(c.reason||'禁溜')+'·机车送车</span>'
+      : '<span class="badge-row badge ok">正常溜放</span>';
+    const run=c.run==='difficult'?'难':(c.run==='easy'?'易':'中');
+    html+='<tr><td>'+esc(c.id)+'</td><td>'+esc(c.type)+'</td><td>'+esc(c.dest)+'</td><td class="num">'+fmt(c.length,1)+'</td><td>'+run+'</td><td>'+st+'</td><td class="num">'+esc(c.classificationTrack)+'</td><td class="num">'+inTrack+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  html+='<div class="mt"><b style="font-size:13px">各股道占用（按去向固定使用）：</b></div>';
+  r.names.forEach(n=>{
+    const tk=r.tracks[n];
+    const seq=tk.cars.map(c=>esc(c.id)).join('、')||'（空）';
+    const over=tk.occLen>tk.effLen;
+    html+='<div class="check-item '+(over?'bad':'ok')+'" style="margin-top:6px"><div class="ico">'+(over?'✗':'✓')+'</div><div class="ct"><div class="nm">'+n+'道 · 去向 '+esc(tk.dests.join('/')||'—')+'</div><div class="vl">'+seq+'</div><div class="vl">占用 <b>'+fmt(tk.occLen,1)+'</b> / '+tk.effLen+' m（'+tk.cars.length+' 辆）</div></div></div>';
+  });
+  if(r.forbidden.length){
+    html+='<div class="mt"><b style="font-size:13px">异常车辆（未溜放，需机车送车 / 禁溜线）：</b></div>';
+    html+=r.forbidden.map(c=>'<div class="badge-row badge warn" style="margin:4px 4px 0 0">'+esc(c.id)+' '+esc(c.type)+'（'+esc(c.dest)+'）· '+esc(c.reason||'禁溜')+'</div>').join('');
+  }
+  if(r.warnings.length){
+    html+='<div class="conclusion warn mt"><strong>提示</strong><ul class="dotlist">'+r.warnings.map(w=>'<li>'+esc(w)+'</li>').join('')+'</ul></div>';
+  }
+  box.innerHTML=html;
+  $('classify-json-out').value=buildClassifyJSON(r, nTrack, effLen);
+}
+
+function copyClassifyJSON(){
+  const v=$('classify-json-out').value;
+  if(!v){ toast('请先解析车列生成结果'); return; }
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(v).then(()=>toast('已复制 JSON')); }
+  else{ const ta=document.createElement('textarea'); ta.value=v; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); toast('已复制 JSON'); }catch(e){ toast('复制失败，请手动选择复制'); } document.body.removeChild(ta); }
+}
+function downloadClassifyJSON(){
+  const v=$('classify-json-out').value;
+  if(!v){ toast('请先解析车列生成结果'); return; }
+  const blob=new Blob([v],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='驼峰解体分配_平面调车初始状态.json'; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000); toast('已下载 JSON');
+}
 
 /* ---------- 结果存档（本地持久化 + 载入/删除/导出导入） ---------- */
 const HIST_KEY='hump_history_v1';
