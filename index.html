@@ -591,7 +591,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
     </div>
     <div class="card mt">
       <h3><span class="dot"></span>优化目标</h3>
-      <div class="sub">三个目标依据教材 4-2 节与知网文献确立、两两冲突：峰高越低成本越低，但推峰速度与冬季溜放可靠性会随之下降。可自由勾选任意组合——目标相互矛盾时，优化将输出「平衡两者、尽可能满足一方」的 Pareto 前沿（多样化解集）。</div>
+      <div class="sub">前三个目标依据教材 4-2 节与知网文献确立；第四个目标「<b>打靶区长度</b>」由<b>变坡点位置</b>直接决定、与峰高 H 无关，用于打破前三个目标均由峰高单一变量驱动的冗余（退化前沿），形成真正独立的权衡维度。可自由勾选任意组合。</div>
       <div class="obj-grid" id="obj-grid"></div>
     </div>
     <div class="card mt">
@@ -989,8 +989,10 @@ function distributeCount(n, N){
 }
 
 /* ---------- 优化目标定义 ----------
-   目标集依据知网文献（张春民《自动化驼峰纵断面优化设计研究》2011 等）与教材 4-2 节：
-   峰高(成本)最小、推峰速度(能力)最大、难行车溜放(冬季可靠性)最大 —— 三者两两冲突，
+   前三个目标依据知网文献（张春民《自动化驼峰纵断面优化设计研究》2011 等）与教材 4-2 节：
+   峰高(成本)最小、推峰速度(能力)最大、难行车溜放(冬季可靠性)最大。
+   第四个目标「打靶区长度」由变坡点位置直接决定、与峰高 H 无关——用于打破前三个目标
+   均由峰高单一变量驱动导致的冗余（退化前沿），形成与峰高正交的独立维度。
    可自由勾选任意组合；冲突时 NSGA-II/MOPSO/ALNS 输出 Pareto 前沿（多样化解集）。
    注：安全连挂率教材仅给出「安全连挂速度 1.4 m/s」的定义、无量化公式，故不作优化目标；
    减速器/减速顶数量已计入成本 costRet/costTop。 */
@@ -998,6 +1000,7 @@ const OBJDEF = {
   cost:      { name:'工程总成本最低',        dir:'min', unit:'万元', tag:'min', desc:'土石方 + 减速器 + 减速顶，总投资估算' },
   capacity:  { name:'解体能力最大',          dir:'max', unit:'m/s', tag:'max', desc:'最大允许推峰速度（受夏季限速与间隔控制）' },
   winter:    { name:'冬季溜放可靠性最高',    dir:'max', unit:'倍',  tag:'max', desc:'难行车冬季末速 / 1.4 的安全裕量' },
+  target:    { name:'打靶区长度最大',        dir:'max', unit:'m',   tag:'max', desc:'末段打靶区（连挂/减速区）长度，仅由变坡点位置决定、与峰高无关' },
 };
 
 /* ---------- 编码/解码（优化变量 → 纵断面） ---------- */
@@ -1125,8 +1128,9 @@ function evaluateProf(prof, cfg){
   // ⑤ 设备数量
   const equip = nSec + D;
 
-  const meta={prof,segs,grades,simHardWinter,simEasySummer,vEndHard,vMaxEasy,vIn,nSec,D,cost,costEarth,costRet,costTop,coupling,winterRel,equip,vCap,pen, capacity:vCap, winter:winterRel, equipment:equip};
-  const all={cost, capacity:vCap, coupling, winter:winterRel, equipment:equip};
+  const targetLen = cfg.L - prof[N-1].x;   // 打靶区（连挂区）长度 = 末段坡长，仅由变坡点位置决定、与峰高无关
+  const meta={prof,segs,grades,simHardWinter,simEasySummer,vEndHard,vMaxEasy,vIn,nSec,D,cost,costEarth,costRet,costTop,coupling,winterRel,equip,vCap,pen, capacity:vCap, winter:winterRel, equipment:equip, target:targetLen};
+  const all={cost, capacity:vCap, coupling, winter:winterRel, equipment:equip, target:targetLen};
   // 目标值只取真实目标；约束违反量 pen 单独存在 penalty 字段，由「约束支配」(cdominates) 处理可行性。
   // 不再把罚函数加到所有目标上——否则违反量更小的解会在所有目标上同时支配其它解，Pareto 前沿塌缩成单点。
   const obj=cfg.objIdx.map(o=>all[o]);
@@ -1844,7 +1848,7 @@ function renderPareto3D(){
   svg.addEventListener('pointerup',()=>{ drag=false; });
   svg.addEventListener('pointerleave',()=>{ drag=false; });
   svg.style.touchAction='none';
-  lg.innerHTML=`<span class="li"><span class="sw" style="background:#2563eb"></span>Pareto 非支配解</span><span class="li"><span class="sw" style="background:#dc2626"></span>当前选中</span><span class="muted" style="font-size:11px">拖拽旋转 · 蓝/绿/红=三目标轴</span>`;
+  lg.innerHTML=`<span class="li"><span class="sw" style="background:#2563eb"></span>Pareto 非支配解</span><span class="li"><span class="sw" style="background:#dc2626"></span>当前选中</span><span class="muted" style="font-size:11px">拖拽旋转 · 蓝/绿/红=三目标轴</span>`+(objIdx.length>3?'<span class="muted" style="font-size:11px">（仅显示前 3 个目标，全部目标请用「平行坐标」）</span>':'');
 }
 function renderParetoPC(){
   const box=$('chart-pareto'); box.innerHTML='';
