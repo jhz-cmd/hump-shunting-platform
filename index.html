@@ -258,6 +258,24 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
 .chart-box{position:relative}
 .chart-hint{margin-top:8px;font-size:12px;color:var(--text-3);line-height:1.55}
 .chart-hint b{color:var(--primary-600);font-weight:600}
+/* 视图切换 segmented 与前沿诊断面板 */
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:5px 12px;font-size:12px;color:var(--text-2);cursor:pointer;border-right:1px solid var(--border)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--primary);color:#fff;font-weight:600}
+.seg button:disabled{opacity:.4;cursor:not-allowed}
+.diag{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:8px}
+.diag .it{border:1px solid var(--border-light);border-radius:8px;padding:8px 10px;background:#fafbfc}
+.diag .it .k{font-size:11px;color:var(--text-2)}
+.diag .it .v{font-size:15px;font-weight:700;margin-top:2px}
+.diag .it .s{font-size:11px;margin-top:2px;color:var(--text-2);line-height:1.4}
+.corr-tbl{border-collapse:collapse;font-size:11.5px;margin-top:8px}
+.corr-tbl th,.corr-tbl td{border:1px solid var(--border-light);padding:4px 9px;text-align:center}
+.corr-tbl th{background:#fafbfc}
+.corr-tbl td.pos{color:#b45309;font-weight:600}
+.corr-tbl td.neg{color:#15803d;font-weight:600}
+.corr-tbl td.zero{color:var(--text-3)}
+
 /* 参数滑块 */
 .range-row{display:flex;align-items:center;gap:10px;height:36px}
 .range-row .inp-range{flex:1;height:36px;margin:0;accent-color:var(--primary);cursor:pointer;background:transparent}
@@ -595,9 +613,16 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
       <div class="card">
         <h3><span class="dot"></span>Pareto 前沿（目标空间）</h3>
         <div class="sub" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
-          <span>横轴</span><select class="sel" id="pareto-x" style="width:auto"></select>
-          <span>纵轴</span><select class="sel" id="pareto-y" style="width:auto"></select>
-          <span class="muted">点击散点切换方案</span>
+          <span class="seg" id="pareto-view-seg">
+            <button type="button" data-v="2d" class="on">二维散点</button>
+            <button type="button" data-v="3d">三维散点</button>
+            <button type="button" data-v="pc">平行坐标</button>
+          </span>
+          <span id="pareto-xy-wrap" style="display:inline-flex;flex-wrap:wrap;gap:8px;align-items:center">
+            <span>横轴</span><select class="sel" id="pareto-x" style="width:auto"></select>
+            <span>纵轴</span><select class="sel" id="pareto-y" style="width:auto"></select>
+          </span>
+          <span class="muted">点击散点/折线切换方案</span>
         </div>
         <div class="chart-box" id="chart-pareto"></div>
         <div class="legend" id="legend-pareto"></div>
@@ -606,6 +631,12 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
         <h3 data-tip="Pareto 解数量随迭代次数的增长"><span class="dot"></span>收敛曲线</h3>
         <div class="chart-box" id="chart-conv"></div>
       </div>
+    </div>
+
+    <div class="card mt">
+      <h3 data-tip="对当前 Pareto 前沿做目标冲突诊断与质量评价（依据知网/权威文献）"><span class="dot"></span>目标冲突诊断 · 前沿质量</h3>
+      <div class="sub">自动给出目标两两 <b>Spearman 相关系数</b>、前沿<b>实际维度（PCA）</b>、<b>跨度 Spread</b> 与 <b>间距 Spacing</b>，用于判断目标是否“线性相关 / 冗余”、前沿是否退化；三目标时可用「三维散点 / 平行坐标」同时观察三者关系。</div>
+      <div id="diag-pareto"></div>
     </div>
 
     <div class="card mt">
@@ -1154,9 +1185,10 @@ async function moPSO(cfg, onIter){
   const dim=cfg.dim, lb=cfg.lb, ub=cfg.ub;
   const dirs=cfg.objIdx.map(o=>OBJDEF[o].dir);
   const pop=[];
+  const seeds=seedVecs(cfg);
   for(let i=0;i<cfg.popSize;i++){
-    // 首个体注入规范可行模板（一键生成方案），保证初始种群含近可行解，避免可行域难搜索导致前沿退化
-    const x = i===0 ? defaultVec(cfg) : lb.map((l,j)=>l+Math.random()*(ub[j]-l));
+    // 初始种群注入规范可行模板 + 沿峰高 H 全域均匀铺开的种子，保证前沿覆盖整个峰高区间、避免退化成局部线段
+    const x = i<seeds.length ? seeds[i] : lb.map((l,j)=>l+Math.random()*(ub[j]-l));
     pop.push({x, v:Array(dim).fill(0)});
   }
   let archive=[];
@@ -1241,7 +1273,8 @@ async function nsga2(cfg, onIter){
   const dirs=cfg.objIdx.map(o=>OBJDEF[o].dir);
   const evalInd=ind=>{ const r=evaluate(ind.x,cfg); ind.obj=r.obj.slice(); ind.prof=r.prof; ind.segs=r.segs; ind.grades=r.grades; ind.meta=r.meta; ind.viol=r.violations; ind.pen=r.penalty; };
   let pop=[];
-  for(let i=0;i<cfg.popSize;i++){ const ind={x:(i===0?defaultVec(cfg):lb.map((l,j)=>l+Math.random()*(ub[j]-l)))}; evalInd(ind); pop.push(ind); }
+  const seeds=seedVecs(cfg);
+  for(let i=0;i<cfg.popSize;i++){ const ind={x:(i<seeds.length?seeds[i]:lb.map((l,j)=>l+Math.random()*(ub[j]-l)))}; evalInd(ind); pop.push(ind); }
   let archive=updateArchive([], pop, dirs, cfg);
   const pc=0.9, etaC=20, etaM=20, pm=1/dim;
   for(let gen=0; gen<cfg.iters && !STOP; gen++){
@@ -1300,7 +1333,8 @@ async function alns(cfg, onIter){
   const dirs=cfg.objIdx.map(o=>OBJDEF[o].dir);
   const evalS=s=>{ const r=evaluate(s.x,cfg); s.obj=r.obj.slice(); s.prof=r.prof; s.segs=r.segs; s.grades=r.grades; s.meta=r.meta; s.viol=r.violations; s.pen=r.penalty; };
   let pool=[];
-  for(let i=0;i<cfg.popSize;i++){ const s={x:(i===0?defaultVec(cfg):lb.map((l,j)=>l+Math.random()*(ub[j]-l)))}; evalS(s); pool.push(s); }
+  const seeds=seedVecs(cfg);
+  for(let i=0;i<cfg.popSize;i++){ const s={x:(i<seeds.length?seeds[i]:lb.map((l,j)=>l+Math.random()*(ub[j]-l)))}; evalS(s); pool.push(s); }
   let archive=updateArchive([], pool, dirs, cfg);
   const w=[1,1,1]; // 单点/三点/大范围 破坏算子权重
   for(let it=0; it<cfg.iters && !STOP; it++){
@@ -1657,7 +1691,208 @@ function startPointDrag(e, i, c, prof, cfg, xmin, xmax, ymin, ymax, isPeak){
  * ===================================================================== */
 const state={ cfg:null, archive:[], selected:null, iterHistory:[], running:false };
 
+/* =====================================================================
+ *  Pareto 前沿冲突诊断 + 三维/平行坐标可视化（依据知网/权威文献）
+ *  —— 解决「目标强线性相关 → 前沿退化」与「三目标无法同时观察」两个问题
+ *  文献依据：
+ *  · Deb & Saxena (2005) On finding Pareto-optimal solutions through
+ *    dimensionality reduction for certain large-dimensional multi-objective
+ *    optimization problems —— 冗余/相关目标使前沿实际维数低于目标数；
+ *  · Brockhoff & Zitzler (2009) Objective reduction in evolutionary multiobjective
+ *    optimization（δ-MOSS 目标约简）——识别并剔除冗余目标；
+ *  · Schott (1995) 间距 Spacing、Deb (2002) 前沿跨度 Spread —— 前沿分布质量；
+ *  · Inselberg (1985) 平行坐标图、三维散点图 —— 高维 Pareto 前沿可视化。
+ * ===================================================================== */
+let paretoView='2d';
+function paretoViewBtnEnable(){
+  const seg=$('pareto-view-seg'); if(!seg) return;
+  const n=(state.cfg&&state.cfg.objIdx)?state.cfg.objIdx.length:0;
+  seg.querySelectorAll('button').forEach(b=>{
+    const v=b.dataset.v;
+    const ok=(v==='2d')?n>=2:n>=3;
+    b.disabled=!ok;
+    b.title=ok?'':(v==='2d'?'需勾选 ≥2 个目标':'需勾选 3 个目标');
+  });
+  const xy=$('pareto-xy-wrap'); if(xy) xy.style.display=(paretoView==='2d')?'inline-flex':'none';
+}
+/* Spearman 秩相关系数（处理并列秩） */
+function spearman(xs,ys){
+  const n=xs.length; if(n<2) return 0;
+  const rank=a=>{ const idx=[...a.keys()].sort((i,j)=>a[i]-a[j]); const r=new Array(n); for(let i=0;i<n;){ let j=i; while(j+1<n&&a[idx[j+1]]===a[idx[i]]) j++; const avg=(i+j)/2; for(let k=i;k<=j;k++) r[idx[k]]=avg; i=j+1; } return r; };
+  const rx=rank(xs), ry=rank(ys);
+  const mx=rx.reduce((a,b)=>a+b,0)/n, my=ry.reduce((a,b)=>a+b,0)/n;
+  let num=0,dx=0,dy=0;
+  for(let i=0;i<n;i++){ num+=(rx[i]-mx)*(ry[i]-my); dx+=(rx[i]-mx)**2; dy+=(ry[i]-my)**2; }
+  const den=Math.sqrt(dx*dy); return den<1e-12?0:num/den;
+}
+/* 对称矩阵 Jacobi 特征值（≤3 阶），返回升序 */
+function jacobiEigen(A){
+  const n=A.length, a=A.map(r=>r.slice());
+  for(let it=0;it<100;it++){
+    let p=0,q=1,max=0;
+    for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){ const v=Math.abs(a[i][j]); if(v>max){max=v;p=i;q=j;} }
+    if(max<1e-12) break;
+    const apq=a[p][q], app=a[p][p], aqq=a[q][q];
+    const phi=0.5*Math.atan2(2*apq, aqq-app);
+    const c=Math.cos(phi), s=Math.sin(phi);
+    for(let k=0;k<n;k++){ if(k!==p&&k!==q){ const akp=a[k][p], akq=a[k][q]; a[k][p]=a[p][k]=c*akp-s*akq; a[k][q]=a[q][k]=s*akp+c*akq; } }
+    a[p][p]=c*c*app-2*s*c*apq+s*s*aqq;
+    a[q][q]=s*s*app+2*s*c*apq+c*c*aqq;
+    a[p][q]=a[q][p]=0;
+  }
+  return [...Array(n)].map((_,i)=>a[i][i]).sort((x,y)=>x-y);
+}
+function renderDiagnosis(){
+  const box=$('diag-pareto'); if(!box) return;
+  const cfg=state.cfg, objIdx=cfg?cfg.objIdx:[];
+  if(!state.archive.length||objIdx.length<2){ box.innerHTML='<div class="muted" style="padding:4px 0">暂无 Pareto 解，运行优化后自动显示目标冲突诊断。</div>'; return; }
+  const nd=state.archive.filter(s=>(s.pen||0)<=1e-9);
+  if(nd.length<2){ box.innerHTML='<div class="muted" style="padding:4px 0">可行 Pareto 解不足 2 个，暂无法诊断。</div>'; return; }
+  const m=objIdx.length;
+  const V=objIdx.map(o=>nd.map(s=>s.meta[o]));
+  const norm=objIdx.map((o,i)=>{ const mn=Math.min(...V[i]), mx=Math.max(...V[i]); const r=mx-mn||1; return V[i].map(v=>(v-mn)/r); });
+  // Spearman 相关矩阵
+  const corr=[]; for(let i=0;i<m;i++){ corr[i]=[]; for(let j=0;j<m;j++) corr[i][j]=i===j?1:spearman(V[i],V[j]); }
+  // PCA 实际维度
+  const mean=[]; for(let i=0;i<m;i++) mean[i]=norm[i].reduce((a,b)=>a+b,0)/nd.length;
+  const cov=[]; for(let i=0;i<m;i++){ cov[i]=[]; for(let j=0;j<m;j++){ let s=0; for(let k=0;k<nd.length;k++) s+=(norm[i][k]-mean[i])*(norm[j][k]-mean[j]); cov[i][j]=s/Math.max(1,nd.length-1); } }
+  const ev=jacobiEigen(cov).reverse();
+  const tot=ev.reduce((a,b)=>a+b,0)||1;
+  const ratio1=ev[0]/tot, ratio2=(ev[0]+(ev[1]||0))/tot;
+  const dimTxt=ratio1>0.95?'≈1（退化为一条线）':(ratio2>0.95?'≈2（一张曲面）':`≈${m}（满维）`);
+  // 跨度 Spread / 间距 Spacing
+  const spread=objIdx.reduce((s,o,i)=>s+(Math.max(...V[i])-Math.min(...V[i])),0);
+  const pts=[]; for(let k=0;k<nd.length;k++) pts.push(objIdx.map((_,i)=>norm[i][k]));
+  const dmin=pts.map((p,idx)=>{ let d=Infinity; for(let q=0;q<pts.length;q++){ if(q===idx) continue; let e=0; for(let i=0;i<m;i++) e+=(p[i]-pts[q][i])**2; d=Math.min(d,Math.sqrt(e)); } return d; });
+  const dbar=dmin.reduce((a,b)=>a+b,0)/dmin.length;
+  const spacing=dbar<=0?0:Math.sqrt(dmin.reduce((s,d)=>s+(d-dbar)**2,0)/(dmin.length-1))/dbar;
+  // 结论：最强线性相关对
+  let mp=null; for(let i=0;i<m;i++)for(let j=i+1;j<m;j++){ if(!mp||Math.abs(corr[i][j])>Math.abs(mp.v)) mp={i,j,v:corr[i][j]}; }
+  let concl='', conclCls='#15803d';
+  if(mp&&Math.abs(mp.v)>=0.9){ concl=`结论：目标「${OBJDEF[objIdx[mp.i]].name}」与「${OBJDEF[objIdx[mp.j]].name}」强线性相关（ρ=${fmt(mp.v,2)}），前沿退化为一条线——两者本质由峰高 H 单一变量驱动，属「冗余目标」；可切换三维/平行坐标视角、并结合下方指标综合评价。`; conclCls='#b45309'; }
+  else if(mp){ concl=`结论：目标两两间无强线性相关（最大 |ρ|=${fmt(Math.abs(mp.v),2)}），前沿呈现真正的多目标权衡。`; }
+  let html=`<div style="font-size:12px;font-weight:600;color:${conclCls};margin-bottom:8px">${concl}</div>`;
+  html+='<div class="diag">';
+  html+=`<div class="it"><div class="k">前沿实际维度（PCA）</div><div class="v">${dimTxt.split('（')[0]}</div><div class="s">第一主成分解释 ${fmt(ratio1*100,0)}%；${ratio1>0.95?'<span style="color:#dc2626">退化前沿</span>':'<span style="color:#15803d">分布正常</span>'}</div></div>`;
+  html+=`<div class="it"><div class="k">前沿跨度 Spread</div><div class="v">${fmt(spread,3)}</div><div class="s">各目标极差之和，越大覆盖越广</div></div>`;
+  html+=`<div class="it"><div class="k">间距 Spacing</div><div class="v">${fmt(spacing,3)}</div><div class="s">越接近 0 分布越均匀</div></div>`;
+  html+=`<div class="it"><div class="k">可行 Pareto 解</div><div class="v">${nd.length}</div><div class="s">用于诊断的非支配解</div></div>`;
+  html+='</div>';
+  html+='<table class="corr-tbl"><tr><th>Spearman ρ</th>'+objIdx.map(o=>`<th>${esc(OBJDEF[o].name)}</th>`).join('')+'</tr>';
+  for(let i=0;i<m;i++){
+    html+=`<tr><th>${esc(OBJDEF[objIdx[i]].name)}</th>`;
+    for(let j=0;j<m;j++){
+      if(i===j){ html+='<td class="zero">—</td>'; continue; }
+      const v=corr[i][j];
+      const sameDir=OBJDEF[objIdx[i]].dir===OBJDEF[objIdx[j]].dir;
+      const conflict=sameDir?(v<-0.1):(v>0.1);
+      const linear=Math.abs(v)>=0.9;
+      const cls=linear?'pos':(conflict?'neg':'zero');
+      const tip=linear?'强线性相关（|ρ|≥0.9）→ 前沿退化为线/目标冗余':(conflict?'真冲突：存在有效权衡':'同向/弱相关：无有效权衡');
+      html+=`<td class="${cls}" title="${esc(tip)}">${fmt(v,2)}</td>`;
+    }
+    html+='</tr>';
+  }
+  html+='</table>';
+  html+='<div class="muted" style="font-size:11.5px;margin-top:6px">橙色=强线性相关（目标冗余、前沿退化）；绿色=真冲突（有效权衡）；灰色=同向/弱相关。方法依据：Deb &amp; Saxena(2005) 冗余目标降维、Brockhoff &amp; Zitzler(2009) 目标约简、公茂果等《进化多目标优化算法研究》(软件学报2009)、Schott(1995) 间距、Deb(2002) 跨度、Inselberg(1985) 平行坐标。</div>';
+  box.innerHTML=html;
+}
+function renderPareto3D(){
+  const box=$('chart-pareto'); box.innerHTML='';
+  const lg=$('legend-pareto'); lg.innerHTML='';
+  const cfg=state.cfg, objIdx=cfg.objIdx;
+  if(!state.archive.length){ box.innerHTML='<div style="padding:24px;color:#9ca3af;text-align:center">尚无 Pareto 解</div>'; return; }
+  const o=[objIdx[0],objIdx[1],objIdx[2]];
+  const names=o.map(ok=>OBJDEF[ok].name);
+  const V=o.map(ok=>state.archive.map(s=>s.meta[ok]));
+  const mn=V.map(a=>Math.min(...a)), mx=V.map(a=>Math.max(...a));
+  const norm=(k,v)=> mx[k]-mn[k]>1e-9?(v-mn[k])/(mx[k]-mn[k]):0.5;
+  const P=state.archive.map(s=>[norm(0,s.meta[o[0]]),norm(1,s.meta[o[1]]),norm(2,s.meta[o[2]])]);
+  const W=Math.max(340,box.clientWidth||600), H=Math.round(W*0.62);
+  const svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.setAttribute('width',W); svg.setAttribute('height',H); box.appendChild(svg);
+  let yaw=0.6, pitch=-0.42;
+  const cx=W/2, cy=H/2, S=Math.min(W,H)*0.33;
+  const rot=p=>{ const x=p[0]-0.5,y=p[1]-0.5,z=p[2]-0.5; const cy_=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch); const X=cy_*x-sy*z, Z=sy*x+cy_*z, Y=cp*y-sp*Z; return [cx+X*S, cy-Y*S]; };
+  const line=(x1,y1,x2,y2,color,w,dash)=>{ const l=document.createElementNS(SVGNS,'line'); l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);l.setAttribute('stroke',color);l.setAttribute('stroke-width',w||1); if(dash)l.setAttribute('stroke-dasharray',dash); svg.appendChild(l); };
+  const txt=(x,y,s,color,size)=>{ const t=document.createElementNS(SVGNS,'text'); t.setAttribute('x',x);t.setAttribute('y',y);t.setAttribute('fill',color||'#6b7280');t.setAttribute('font-size',size||11);t.setAttribute('text-anchor','middle'); t.textContent=s; svg.appendChild(t); };
+  function draw(){
+    svg.innerHTML='';
+    const corners=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
+    const pr=corners.map(rot);
+    const edges=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+    edges.forEach(([a,b])=>line(pr[a][0],pr[a][1],pr[b][0],pr[b][1],'#e5e7eb',1));
+    const origin=rot([0,0,0]);
+    const axes=[[[1,0,0],'#2563eb',names[0]],[[0,1,0],'#16a34a',names[1]],[[0,0,1],'#dc2626',names[2]]];
+    axes.forEach(([pt,color,nm])=>{ const p=rot(pt); line(origin[0],origin[1],p[0],p[1],color,2); txt(p[0]+(p[0]>=origin[0]?10:-10), p[1]-6, nm, color, 12); });
+    const depth=p=>{ const x=p[0]-0.5,y=p[1]-0.5,z=p[2]-0.5; return Math.cos(yaw)*z+Math.sin(yaw)*x; };
+    const order=P.map((p,i)=>i).sort((a,b)=>depth(P[a])-depth(P[b]));
+    order.forEach(i=>{
+      const p=P[i], pt=rot(p);
+      const c=document.createElementNS(SVGNS,'circle');
+      c.setAttribute('cx',pt[0]); c.setAttribute('cy',pt[1]); c.setAttribute('r',5);
+      c.setAttribute('fill',state.selected===state.archive[i]?'#dc2626':'#2563eb');
+      c.setAttribute('stroke','#fff'); c.setAttribute('stroke-width',1); c.style.cursor='pointer';
+      c.addEventListener('click',()=>{ selectSolution(state.archive[i]); draw(); });
+      const t=document.createElementNS(SVGNS,'title'); t.textContent=o.map((ok,k)=>`${OBJDEF[ok].name}: ${fmt(state.archive[i].meta[ok],2)} ${OBJDEF[ok].unit}`).join('\n'); c.appendChild(t);
+      svg.appendChild(c);
+    });
+  }
+  draw();
+  let drag=false,lx=0,ly=0;
+  svg.addEventListener('pointerdown',e=>{ drag=true; lx=e.clientX; ly=e.clientY; svg.setPointerCapture(e.pointerId); });
+  svg.addEventListener('pointermove',e=>{ if(!drag) return; yaw+=(e.clientX-lx)*0.012; pitch=clamp(pitch+(e.clientY-ly)*0.012,-1.5,1.5); lx=e.clientX; ly=e.clientY; draw(); });
+  svg.addEventListener('pointerup',()=>{ drag=false; });
+  svg.addEventListener('pointerleave',()=>{ drag=false; });
+  svg.style.touchAction='none';
+  lg.innerHTML=`<span class="li"><span class="sw" style="background:#2563eb"></span>Pareto 非支配解</span><span class="li"><span class="sw" style="background:#dc2626"></span>当前选中</span><span class="muted" style="font-size:11px">拖拽旋转 · 蓝/绿/红=三目标轴</span>`;
+}
+function renderParetoPC(){
+  const box=$('chart-pareto'); box.innerHTML='';
+  const lg=$('legend-pareto'); lg.innerHTML='';
+  const cfg=state.cfg, objIdx=cfg.objIdx;
+  if(!state.archive.length){ box.innerHTML='<div style="padding:24px;color:#9ca3af;text-align:center">尚无 Pareto 解</div>'; return; }
+  const m=objIdx.length;
+  const W=Math.max(340,box.clientWidth||600), H=Math.round(W*0.6);
+  const ml=64, mr=44, mt=30, mb=30;
+  const svg=document.createElementNS(SVGNS,'svg'); svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.setAttribute('width',W); svg.setAttribute('height',H); box.appendChild(svg);
+  const V=objIdx.map(o=>state.archive.map(s=>s.meta[o]));
+  const mn=V.map(a=>Math.min(...a)), mx=V.map(a=>Math.max(...a));
+  const X=k=> ml+(W-ml-mr)*k/(m-1);
+  const Y=(k,v)=> mt+(v-mn[k])/((mx[k]-mn[k])||1)*(H-mt-mb);
+  for(let k=0;k<m;k++){
+    const x=X(k);
+    const l=document.createElementNS(SVGNS,'line'); l.setAttribute('x1',x);l.setAttribute('y1',mt);l.setAttribute('x2',x);l.setAttribute('y2',H-mb);l.setAttribute('stroke','#e5e7eb'); svg.appendChild(l);
+    const t1=document.createElementNS(SVGNS,'text'); t1.setAttribute('x',x);t1.setAttribute('y',mt-8);t1.setAttribute('text-anchor','middle');t1.setAttribute('font-size',10);t1.setAttribute('fill','#6b7280'); t1.textContent=fmt(mx[k],2); svg.appendChild(t1);
+    const t2=document.createElementNS(SVGNS,'text'); t2.setAttribute('x',x);t2.setAttribute('y',H-mb+12);t2.setAttribute('text-anchor','middle');t2.setAttribute('font-size',10);t2.setAttribute('fill','#6b7280'); t2.textContent=fmt(mn[k],2); svg.appendChild(t2);
+    const t0=document.createElementNS(SVGNS,'text'); t0.setAttribute('x',x);t0.setAttribute('y',H-6);t0.setAttribute('text-anchor','middle');t0.setAttribute('font-size',10.5);t0.setAttribute('fill','#1f2937');t0.setAttribute('font-weight','700'); t0.textContent=OBJDEF[objIdx[k]].name; svg.appendChild(t0);
+  }
+  state.archive.forEach(s=>{
+    const d=objIdx.map((o,k)=>`${k===0?'M':'L'}${X(k).toFixed(1)},${Y(k,s.meta[o]).toFixed(1)}`).join(' ');
+    const p=document.createElementNS(SVGNS,'path'); p.setAttribute('d',d); p.setAttribute('fill','none');
+    p.setAttribute('stroke',state.selected===s?'#dc2626':'#2563eb');
+    p.setAttribute('stroke-width',state.selected===s?2.5:1.1);
+    p.setAttribute('opacity',state.selected===s?1:0.42); p.style.cursor='pointer';
+    p.addEventListener('click',()=>selectSolution(s));
+    const t=document.createElementNS(SVGNS,'title'); t.textContent=objIdx.map(o=>`${OBJDEF[o].name}: ${fmt(s.meta[o],2)} ${OBJDEF[o].unit}`).join('\n'); p.appendChild(t);
+    svg.appendChild(p);
+  });
+  lg.innerHTML=`<span class="li"><span class="sw" style="background:#2563eb"></span>Pareto 解（每条折线一个方案）</span><span class="li"><span class="sw" style="background:#dc2626"></span>当前选中</span><span class="muted" style="font-size:11px">各轴已归一化到自身 min–max</span>`;
+}
 function renderPareto(){
+  paretoViewBtnEnable();
+  const cfg=state.cfg;
+  if(!state.archive.length){
+    const c=makeChart('chart-pareto'); c.text(c.W/2,c.H/2,'尚无 Pareto 解，请先运行优化',{color:'#9ca3af'});
+    $('legend-pareto').innerHTML='';
+    renderDiagnosis(); return;
+  }
+  const objIdx=cfg.objIdx;
+  if(paretoView==='3d'&&objIdx.length>=3){ renderPareto3D(); renderDiagnosis(); return; }
+  if(paretoView==='pc'&&objIdx.length>=3){ renderParetoPC(); renderDiagnosis(); return; }
+  if(paretoView!=='2d') paretoView='2d';
+  renderPareto2D(); renderDiagnosis();
+}
+function renderPareto2D(){
   const cfg=state.cfg;
   const c=makeChart('chart-pareto');
   const lg=$('legend-pareto'); lg.innerHTML='';
@@ -2385,6 +2620,20 @@ function defaultVec(cfg){ // 把默认纵断面压回一个合法变量向量
   return v;
 }
 
+/* 初始种群种子：默认规范模板 + 沿峰高 H 全域均匀铺开的种子 + 随机。
+   保证 Pareto 前沿覆盖整个峰高可行区间、充分暴露「解体能力/冬季可靠性」随峰高的
+   非单调权衡（拱形），避免前沿塌缩在某一 H 邻域而退化为短线段。 */
+function seedVecs(cfg){
+  const vecs=[defaultVec(cfg)];
+  const K=5;
+  for(let k=1;k<=K;k++){
+    const base=defaultVec(cfg);
+    base[0]=cfg.Hmin+(cfg.Hmax-cfg.Hmin)*k/(K+1);
+    vecs.push(base);
+  }
+  return vecs;
+}
+
 function renderParetoTable(){
   const cfg=state.cfg;
   const objIdx=cfg.objIdx;
@@ -2478,6 +2727,13 @@ function bindEvents(){
     });
     grid.appendChild(d);
   });
+  // 视图切换：二维散点 / 三维散点 / 平行坐标
+  const viewSeg=$('pareto-view-seg');
+  if(viewSeg) viewSeg.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    paretoView=b.dataset.v;
+    viewSeg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+    renderPareto();
+  }));
   // 地区联动
   const region=$('in-region');
   const regionMap={华北:[-10,4],东北:[-25,5],华东:[0,3],华南:[5,2],西北:[-20,5]};
