@@ -418,14 +418,14 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
 
     <div class="grid cols-2 mt">
       <div class="card">
-        <h3 data-tip="用于把高峰小时能力折算成日解体能力"><span class="dot"></span>解体能力参数</h3>
+        <h3 data-tip="按教材式(4-5-1)：日解体能力 = 高峰小时能力 × (1440 − Σt固)/60"><span class="dot"></span>解体能力参数</h3>
         <div class="row">
           <div class="field">
-            <label>高峰小时系数 <span class="unit">倍</span></label>
-            <input class="inp" id="in-peak" type="number" value="1.3" min="1" max="2" step="0.1">
+            <label>固定作业时间 Σt固 <span class="unit">min</span></label>
+            <input class="inp" id="in-fixed" type="number" value="120" min="60" max="240" step="5">
           </div>
         </div>
-        <div class="hint"><b>高峰小时系数</b>反映高峰时段比全天平均忙多少倍，用于把高峰小时能力折算成日解体能力（一般取 1.2～1.5）。</div>
+        <div class="hint"><b>固定作业时间 Σt固</b>指一昼夜内驼峰无法进行解体作业的固定时间——交接班、吃饭、机车整备、送禁溜车与取送车等，用于把高峰小时能力折算成日解体能力（教材式 4-5-1、4-5-2，一般取 120～180 min）。</div>
       </div>
 
       <div class="card">
@@ -1812,7 +1812,7 @@ function renderCapacity(meta,cfg){
   const mCar=50, Lcar=mCar*14, alpha0=0.04;
   const vCap=meta.vCap;
   const Bpeak=3600*M*(1-alpha0)*vCap*mCar/Lcar;
-  const daily=Bpeak*24/parseFloat($('in-peak').value);
+  const daily=Bpeak*(1440-parseFloat($('in-fixed').value))/60;
   const vEndHard=meta.vEndHard;
   const interval = vEndHard>=1.4? '达标' : '追钩/溜不到位风险';
   $('check-capacity').innerHTML=`
@@ -1832,7 +1832,7 @@ function renderAdvice(meta,cfg){
   const M=parseInt($('in-machines').value);
   const mCar=50, Lcar=mCar*14, alpha0=0.04;
   const Bpeak=3600*M*(1-alpha0)*meta.vCap*mCar/Lcar;
-  const daily=Bpeak*24/parseFloat($('in-peak').value);
+  const daily=Bpeak*(1440-parseFloat($('in-fixed').value))/60;
 
   // —— 综合结论（随当前方案实时变化） ——
   const wOk=meta.vEndHard>=1.4, sOk=meta.vMaxEasy<=7.0, gradOk=meta.pen<=1e-6;
@@ -1849,7 +1849,7 @@ function renderAdvice(meta,cfg){
   const mid=g.slice(1,N-2).map(v=>fmt(v,1)).join(' / ');
   const pts=[];
   pts.push(`峰高 <b>H = ${fmt(H,2)} m</b>${H>=cfg.Hmin&&H<=cfg.Hmax?`（在允许范围 [${fmt(cfg.Hmin,1)}~${fmt(cfg.Hmax,1)}] m 内）`:`（<b>超出</b>允许范围 [${fmt(cfg.Hmin,1)}~${fmt(cfg.Hmax,1)}] m）`}，对应土石方成本约 ${fmt(meta.costEarth,0)} 万元。`);
-  pts.push(`最大允许推峰速度 <b>${fmt(meta.vCap,2)} m/s</b>，据此估算高峰小时解体能力约 <b>${fmt(Bpeak,0)} 辆/h</b>、日解体能力约 <b>${fmt(daily,0)} 辆/日</b>（${M} 台机车、高峰小时系数 ${$('in-peak').value}）。`);
+  pts.push(`最大允许推峰速度 <b>${fmt(meta.vCap,2)} m/s</b>，据此估算高峰小时解体能力约 <b>${fmt(Bpeak,0)} 辆/h</b>、日解体能力约 <b>${fmt(daily,0)} 辆/日</b>（${M} 台机车、固定作业时间 ${$('in-fixed').value} min，教材式 4-5-1）。`);
   pts.push(`冬季难行车末速 <b>${fmt(meta.vEndHard,2)} m/s</b>（${wOk?'≥1.4，溜放到位':'<1.4，溜不到位'}），冬季可靠性 ${fmt(meta.winterRel*100,0)}%；夏季易行车最大速度 <b>${fmt(meta.vMaxEasy,2)} m/s</b>（${sOk?'≤7，不超速':'>7，超速'}），安全连挂率约 <b>${fmt(meta.coupling,0)}%</b>。`);
   pts.push(`减速设备：减速器 <b>${meta.nSec} 节</b>、减速顶 <b>${meta.D} 个</b>（合计 ${meta.equip} 项），工程估算成本约 <b>${fmt(meta.cost,0)} 万元</b>（土石方 ${fmt(meta.costEarth,0)} + 减速器 ${fmt(meta.costRet,0)} + 减速顶 ${fmt(meta.costTop,1)}）。`);
   pts.push(`纵断面坡度：加速坡 <b>${fmt(g[0],1)}‰</b>（规范 ≤55）→ 中间坡 ${mid||'—'}‰（规范 ≥8）→ 道岔区 <b>${fmt(g[N-2],1)}‰</b>（规范 ≤2.5）→ 打靶区 <b>${fmt(g[N-1],1)}‰</b>（规范 0.6~1.0）。`);
@@ -2436,7 +2436,7 @@ function loadExampleInputs(){
   const set=(id,v)=>{ const el=$(id); if(el){ el.value=v; } };
   set('in-lines','16'); set('in-daily','2000'); set('in-machines','2');
   set('in-region','华北'); set('in-twinter','-10'); set('in-vwind','4');
-  set('in-peak','1.3');
+  set('in-fixed','120');
   set('in-hmax','5.5'); set('in-hmin','4.0'); set('in-length','380'); set('in-segments','4');
   set('in-nrev','6'); set('in-nfwd','2'); set('in-ndia','1'); set('in-nslip','1');
   set('in-crev','24'); set('in-cfwd','12'); set('in-cdia','12'); set('in-cslip','48'); set('in-ccurve','8');
@@ -2486,7 +2486,7 @@ function bindEvents(){
   // 调车线规模变化时，自动重推各型道岔默认数（可再手动编辑）
   const syncSwitchCounts=()=>{ const tp=trackParams(parseInt($('in-lines').value)||16); const v=['in-nrev','in-nfwd','in-ndia','in-nslip'].map(id=>$(id)); const vals=[tp.nRev,tp.nFwd,tp.nDia,tp.nSlip]; vals.forEach((val,i)=>{ if(v[i]) v[i].value=val; }); };
   $('in-lines').addEventListener('change',()=>{ syncSwitchCounts(); scheduleRegen(); });
-  const designInputIds=['in-lines','in-daily','in-machines','in-region','in-twinter','in-vwind','in-peak','in-hmax','in-hmin','in-length','in-segments','in-nrev','in-nfwd','in-ndia','in-nslip','in-ccurve','in-crev','in-cfwd','in-cdia','in-cslip'];
+  const designInputIds=['in-lines','in-daily','in-machines','in-region','in-twinter','in-vwind','in-fixed','in-hmax','in-hmin','in-length','in-segments','in-nrev','in-nfwd','in-ndia','in-nslip','in-ccurve','in-crev','in-cfwd','in-cdia','in-cslip'];
   let regenTimer=null;
   const scheduleRegen=()=>{ if($('btn-run2').disabled) return; clearTimeout(regenTimer); regenTimer=setTimeout(regenInitial,150); };
   designInputIds.forEach(id=>{ const el=$(id); if(!el) return; el.addEventListener('input',scheduleRegen); el.addEventListener('change',scheduleRegen); });
