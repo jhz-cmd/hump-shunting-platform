@@ -264,17 +264,6 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
 .seg button:last-child{border-right:0}
 .seg button.on{background:var(--primary);color:#fff;font-weight:600}
 .seg button:disabled{opacity:.4;cursor:not-allowed}
-.diag{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:8px}
-.diag .it{border:1px solid var(--border-light);border-radius:8px;padding:8px 10px;background:#fafbfc}
-.diag .it .k{font-size:11px;color:var(--text-2)}
-.diag .it .v{font-size:15px;font-weight:700;margin-top:2px}
-.diag .it .s{font-size:11px;margin-top:2px;color:var(--text-2);line-height:1.4}
-.corr-tbl{border-collapse:collapse;font-size:11.5px;margin-top:8px}
-.corr-tbl th,.corr-tbl td{border:1px solid var(--border-light);padding:4px 9px;text-align:center}
-.corr-tbl th{background:#fafbfc}
-.corr-tbl td.pos{color:#b45309;font-weight:600}
-.corr-tbl td.neg{color:#15803d;font-weight:600}
-.corr-tbl td.zero{color:var(--text-3)}
 
 /* 参数滑块 */
 .range-row{display:flex;align-items:center;gap:10px;height:36px}
@@ -589,7 +578,7 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
     </div>
     <div class="card mt">
       <h3><span class="dot"></span>优化目标</h3>
-      <div class="sub">前三个目标依据教材 4-2 节与知网文献确立；第四个目标「<b>打靶区长度</b>」由<b>变坡点位置</b>直接决定、与峰高 H 无关，用于打破前三个目标均由峰高单一变量驱动的冗余（退化前沿），形成真正独立的权衡维度。可自由勾选任意组合。</div>
+      <div class="sub">前三个目标依据教材 4-2 节与知网文献确立；第四个目标「<b>车辆平均溜放速度</b>」取难行车·冬季沿全程速度曲线的里程平均，反映解体作业效率。可自由勾选任意组合。</div>
       <div class="obj-grid" id="obj-grid"></div>
     </div>
     <div class="card mt">
@@ -629,12 +618,6 @@ code{background:var(--bg);border:1px solid var(--border-light);border-radius:5px
         <h3 data-tip="Pareto 解数量随迭代次数的增长"><span class="dot"></span>收敛曲线</h3>
         <div class="chart-box" id="chart-conv"></div>
       </div>
-    </div>
-
-    <div class="card mt">
-      <h3 data-tip="对当前 Pareto 前沿做目标冲突诊断与质量评价（依据知网/权威文献）"><span class="dot"></span>目标冲突诊断 · 前沿质量</h3>
-      <div class="sub">自动给出目标两两 <b>Spearman 相关系数</b>、前沿<b>实际维度（PCA）</b>、<b>跨度 Spread</b> 与 <b>间距 Spacing</b>，用于判断目标是否“线性相关 / 冗余”、前沿是否退化；三目标时可用「三维散点 / 平行坐标」同时观察三者关系。</div>
-      <div id="diag-pareto"></div>
     </div>
 
     <div class="card mt">
@@ -868,6 +851,13 @@ function simulate(prof, veh, cond, vpush){
 }
 function maxSpeed(pts){ let m=0; for(const p of pts) if(p.v>m) m=p.v; return m; }
 function endSpeed(pts){ return pts[pts.length-1].v; }
+/* 速度曲线沿里程的平均速度（梯形积分，m/s）：车辆平均溜放速度 */
+function meanSpeed(pts, L){
+  if(!pts || pts.length<2 || !L) return 0;
+  let s=0;
+  for(let i=0;i<pts.length-1;i++){ s += 0.5*(pts[i].v+pts[i+1].v)*(pts[i+1].x-pts[i].x); }
+  return s/L;
+}
 
 /* ---------- 能高分析（能高法 4-1-20）：总能高/阻力能高(四分量累计)/动能高 沿里程分布 ---------- */
 function energyAnalysis(prof, veh, cond, vpush){
@@ -928,16 +918,16 @@ function distributeCount(n, N){
 /* ---------- 优化目标定义 ----------
    前三个目标依据知网文献（张春民《自动化驼峰纵断面优化设计研究》2011 等）与教材 4-2 节：
    峰高(成本)最小、推峰速度(能力)最大、难行车溜放(冬季可靠性)最大。
-   第四个目标「打靶区长度」由变坡点位置直接决定、与峰高 H 无关——用于打破前三个目标
-   均由峰高单一变量驱动导致的冗余（退化前沿），形成与峰高正交的独立维度。
-   可自由勾选任意组合；冲突时 NSGA-II/MOPSO/ALNS 输出 Pareto 前沿（多样化解集）。
+   第四个目标「车辆平均溜放速度」= 难行车·冬季沿全程速度曲线的里程平均（能高法递推结果），
+   反映解体作业效率，由峰高与纵断面坡度共同决定；可自由勾选任意组合。
+   冲突时 NSGA-II/MOPSO/ALNS 输出 Pareto 前沿（多样化解集）。
    注：安全连挂率教材仅给出「安全连挂速度 1.4 m/s」的定义、无量化公式，故不作优化目标；
    减速器/减速顶数量已计入成本 costRet/costTop。 */
 const OBJDEF = {
   cost:      { name:'工程总成本最低',        dir:'min', unit:'万元', tag:'min', desc:'土石方 + 减速器 + 减速顶，总投资估算' },
   capacity:  { name:'解体能力最大',          dir:'max', unit:'m/s', tag:'max', desc:'最大允许推峰速度（受夏季限速与间隔控制）' },
   winter:    { name:'冬季溜放可靠性最高',    dir:'max', unit:'倍',  tag:'max', desc:'难行车冬季末速 / 1.4 的安全裕量' },
-  target:    { name:'打靶区长度最大',        dir:'max', unit:'m',   tag:'max', desc:'末段打靶区（连挂/减速区）长度，仅由变坡点位置决定、与峰高无关' },
+  avg:       { name:'车辆平均溜放速度最大',  dir:'max', unit:'m/s', tag:'max', desc:'难行车·冬季沿全程的速度里程平均，衡量解体作业效率' },
 };
 
 /* ---------- 编码/解码（优化变量 → 纵断面） ---------- */
@@ -1065,9 +1055,9 @@ function evaluateProf(prof, cfg){
   // ⑤ 设备数量
   const equip = nSec + D;
 
-  const targetLen = cfg.L - prof[N-1].x;   // 打靶区（连挂区）长度 = 末段坡长，仅由变坡点位置决定、与峰高无关
-  const meta={prof,segs,grades,simHardWinter,simEasySummer,vEndHard,vMaxEasy,vIn,nSec,D,cost,costEarth,costRet,costTop,coupling,winterRel,equip,vCap,pen, capacity:vCap, winter:winterRel, equipment:equip, target:targetLen};
-  const all={cost, capacity:vCap, coupling, winter:winterRel, equipment:equip, target:targetLen};
+  const avgSpeed = meanSpeed(simHardWinter, cfg.L);   // 车辆平均溜放速度 = 难行车·冬季速度曲线沿里程平均（能高法递推）
+  const meta={prof,segs,grades,simHardWinter,simEasySummer,vEndHard,vMaxEasy,vIn,nSec,D,cost,costEarth,costRet,costTop,coupling,winterRel,equip,vCap,pen, capacity:vCap, winter:winterRel, equipment:equip, avg:avgSpeed};
+  const all={cost, capacity:vCap, coupling, winter:winterRel, equipment:equip, avg:avgSpeed};
   // 目标值只取真实目标；约束违反量 pen 单独存在 penalty 字段，由「约束支配」(cdominates) 处理可行性。
   // 不再把罚函数加到所有目标上——否则违反量更小的解会在所有目标上同时支配其它解，Pareto 前沿塌缩成单点。
   const obj=cfg.objIdx.map(o=>all[o]);
@@ -1633,16 +1623,9 @@ function startPointDrag(e, i, c, prof, cfg, xmin, xmax, ymin, ymax, isPeak){
 const state={ cfg:null, archive:[], selected:null, iterHistory:[], running:false };
 
 /* =====================================================================
- *  Pareto 前沿冲突诊断 + 三维/平行坐标可视化（依据知网/权威文献）
- *  —— 解决「目标强线性相关 → 前沿退化」与「三目标无法同时观察」两个问题
- *  文献依据：
- *  · Deb & Saxena (2005) On finding Pareto-optimal solutions through
- *    dimensionality reduction for certain large-dimensional multi-objective
- *    optimization problems —— 冗余/相关目标使前沿实际维数低于目标数；
- *  · Brockhoff & Zitzler (2009) Objective reduction in evolutionary multiobjective
- *    optimization（δ-MOSS 目标约简）——识别并剔除冗余目标；
- *  · Schott (1995) 间距 Spacing、Deb (2002) 前沿跨度 Spread —— 前沿分布质量；
- *  · Inselberg (1985) 平行坐标图、三维散点图 —— 高维 Pareto 前沿可视化。
+ *  Pareto 前沿可视化：二维散点 / 三维散点 / 平行坐标
+ *  —— 三目标及以上时，三维散点与平行坐标（Inselberg 1985）可同时观察
+ *     多个目标间的关系，弥补二维散点只能表示两目标关系的不足。
  * ===================================================================== */
 let paretoView='2d';
 function paretoViewBtnEnable(){
@@ -1655,88 +1638,6 @@ function paretoViewBtnEnable(){
     b.title=ok?'':(v==='2d'?'需勾选 ≥2 个目标':'需勾选 3 个目标');
   });
   const xy=$('pareto-xy-wrap'); if(xy) xy.style.display=(paretoView==='2d')?'inline-flex':'none';
-}
-/* Spearman 秩相关系数（处理并列秩） */
-function spearman(xs,ys){
-  const n=xs.length; if(n<2) return 0;
-  const rank=a=>{ const idx=[...a.keys()].sort((i,j)=>a[i]-a[j]); const r=new Array(n); for(let i=0;i<n;){ let j=i; while(j+1<n&&a[idx[j+1]]===a[idx[i]]) j++; const avg=(i+j)/2; for(let k=i;k<=j;k++) r[idx[k]]=avg; i=j+1; } return r; };
-  const rx=rank(xs), ry=rank(ys);
-  const mx=rx.reduce((a,b)=>a+b,0)/n, my=ry.reduce((a,b)=>a+b,0)/n;
-  let num=0,dx=0,dy=0;
-  for(let i=0;i<n;i++){ num+=(rx[i]-mx)*(ry[i]-my); dx+=(rx[i]-mx)**2; dy+=(ry[i]-my)**2; }
-  const den=Math.sqrt(dx*dy); return den<1e-12?0:num/den;
-}
-/* 对称矩阵 Jacobi 特征值（≤3 阶），返回升序 */
-function jacobiEigen(A){
-  const n=A.length, a=A.map(r=>r.slice());
-  for(let it=0;it<100;it++){
-    let p=0,q=1,max=0;
-    for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){ const v=Math.abs(a[i][j]); if(v>max){max=v;p=i;q=j;} }
-    if(max<1e-12) break;
-    const apq=a[p][q], app=a[p][p], aqq=a[q][q];
-    const phi=0.5*Math.atan2(2*apq, aqq-app);
-    const c=Math.cos(phi), s=Math.sin(phi);
-    for(let k=0;k<n;k++){ if(k!==p&&k!==q){ const akp=a[k][p], akq=a[k][q]; a[k][p]=a[p][k]=c*akp-s*akq; a[k][q]=a[q][k]=s*akp+c*akq; } }
-    a[p][p]=c*c*app-2*s*c*apq+s*s*aqq;
-    a[q][q]=s*s*app+2*s*c*apq+c*c*aqq;
-    a[p][q]=a[q][p]=0;
-  }
-  return [...Array(n)].map((_,i)=>a[i][i]).sort((x,y)=>x-y);
-}
-function renderDiagnosis(){
-  const box=$('diag-pareto'); if(!box) return;
-  const cfg=state.cfg, objIdx=cfg?cfg.objIdx:[];
-  if(!state.archive.length||objIdx.length<2){ box.innerHTML='<div class="muted" style="padding:4px 0">暂无 Pareto 解，运行优化后自动显示目标冲突诊断。</div>'; return; }
-  const nd=state.archive.filter(s=>(s.pen||0)<=1e-9);
-  if(nd.length<2){ box.innerHTML='<div class="muted" style="padding:4px 0">可行 Pareto 解不足 2 个，暂无法诊断。</div>'; return; }
-  const m=objIdx.length;
-  const V=objIdx.map(o=>nd.map(s=>s.meta[o]));
-  const norm=objIdx.map((o,i)=>{ const mn=Math.min(...V[i]), mx=Math.max(...V[i]); const r=mx-mn||1; return V[i].map(v=>(v-mn)/r); });
-  // Spearman 相关矩阵
-  const corr=[]; for(let i=0;i<m;i++){ corr[i]=[]; for(let j=0;j<m;j++) corr[i][j]=i===j?1:spearman(V[i],V[j]); }
-  // PCA 实际维度
-  const mean=[]; for(let i=0;i<m;i++) mean[i]=norm[i].reduce((a,b)=>a+b,0)/nd.length;
-  const cov=[]; for(let i=0;i<m;i++){ cov[i]=[]; for(let j=0;j<m;j++){ let s=0; for(let k=0;k<nd.length;k++) s+=(norm[i][k]-mean[i])*(norm[j][k]-mean[j]); cov[i][j]=s/Math.max(1,nd.length-1); } }
-  const ev=jacobiEigen(cov).reverse();
-  const tot=ev.reduce((a,b)=>a+b,0)||1;
-  const ratio1=ev[0]/tot, ratio2=(ev[0]+(ev[1]||0))/tot;
-  const dimTxt=ratio1>0.95?'≈1（退化为一条线）':(ratio2>0.95?'≈2（一张曲面）':`≈${m}（满维）`);
-  // 跨度 Spread / 间距 Spacing
-  const spread=objIdx.reduce((s,o,i)=>s+(Math.max(...V[i])-Math.min(...V[i])),0);
-  const pts=[]; for(let k=0;k<nd.length;k++) pts.push(objIdx.map((_,i)=>norm[i][k]));
-  const dmin=pts.map((p,idx)=>{ let d=Infinity; for(let q=0;q<pts.length;q++){ if(q===idx) continue; let e=0; for(let i=0;i<m;i++) e+=(p[i]-pts[q][i])**2; d=Math.min(d,Math.sqrt(e)); } return d; });
-  const dbar=dmin.reduce((a,b)=>a+b,0)/dmin.length;
-  const spacing=dbar<=0?0:Math.sqrt(dmin.reduce((s,d)=>s+(d-dbar)**2,0)/(dmin.length-1))/dbar;
-  // 结论：最强线性相关对
-  let mp=null; for(let i=0;i<m;i++)for(let j=i+1;j<m;j++){ if(!mp||Math.abs(corr[i][j])>Math.abs(mp.v)) mp={i,j,v:corr[i][j]}; }
-  let concl='', conclCls='#15803d';
-  if(mp&&Math.abs(mp.v)>=0.9){ concl=`结论：目标「${OBJDEF[objIdx[mp.i]].name}」与「${OBJDEF[objIdx[mp.j]].name}」强线性相关（ρ=${fmt(mp.v,2)}），前沿退化为一条线——两者本质由峰高 H 单一变量驱动，属「冗余目标」；可切换三维/平行坐标视角、并结合下方指标综合评价。`; conclCls='#b45309'; }
-  else if(mp){ concl=`结论：目标两两间无强线性相关（最大 |ρ|=${fmt(Math.abs(mp.v),2)}），前沿呈现真正的多目标权衡。`; }
-  let html=`<div style="font-size:12px;font-weight:600;color:${conclCls};margin-bottom:8px">${concl}</div>`;
-  html+='<div class="diag">';
-  html+=`<div class="it"><div class="k">前沿实际维度（PCA）</div><div class="v">${dimTxt.split('（')[0]}</div><div class="s">第一主成分解释 ${fmt(ratio1*100,0)}%；${ratio1>0.95?'<span style="color:#dc2626">退化前沿</span>':'<span style="color:#15803d">分布正常</span>'}</div></div>`;
-  html+=`<div class="it"><div class="k">前沿跨度 Spread</div><div class="v">${fmt(spread,3)}</div><div class="s">各目标极差之和，越大覆盖越广</div></div>`;
-  html+=`<div class="it"><div class="k">间距 Spacing</div><div class="v">${fmt(spacing,3)}</div><div class="s">越接近 0 分布越均匀</div></div>`;
-  html+=`<div class="it"><div class="k">可行 Pareto 解</div><div class="v">${nd.length}</div><div class="s">用于诊断的非支配解</div></div>`;
-  html+='</div>';
-  html+='<table class="corr-tbl"><tr><th>Spearman ρ</th>'+objIdx.map(o=>`<th>${esc(OBJDEF[o].name)}</th>`).join('')+'</tr>';
-  for(let i=0;i<m;i++){
-    html+=`<tr><th>${esc(OBJDEF[objIdx[i]].name)}</th>`;
-    for(let j=0;j<m;j++){
-      if(i===j){ html+='<td class="zero">—</td>'; continue; }
-      const v=corr[i][j];
-      const sameDir=OBJDEF[objIdx[i]].dir===OBJDEF[objIdx[j]].dir;
-      const conflict=sameDir?(v<-0.1):(v>0.1);
-      const linear=Math.abs(v)>=0.9;
-      const cls=linear?'pos':(conflict?'neg':'zero');
-      const tip=linear?'强线性相关（|ρ|≥0.9）→ 前沿退化为线/目标冗余':(conflict?'真冲突：存在有效权衡':'同向/弱相关：无有效权衡');
-      html+=`<td class="${cls}" title="${esc(tip)}">${fmt(v,2)}</td>`;
-    }
-    html+='</tr>';
-  }
-  html+='</table>';
-  html+='<div class="muted" style="font-size:11.5px;margin-top:6px">橙色=强线性相关（目标冗余、前沿退化）；绿色=真冲突（有效权衡）；灰色=同向/弱相关。方法依据：Deb &amp; Saxena(2005) 冗余目标降维、Brockhoff &amp; Zitzler(2009) 目标约简、公茂果等《进化多目标优化算法研究》(软件学报2009)、Schott(1995) 间距、Deb(2002) 跨度、Inselberg(1985) 平行坐标。</div>';
-  box.innerHTML=html;
 }
 function renderPareto3D(){
   const box=$('chart-pareto'); box.innerHTML='';
@@ -1825,13 +1726,13 @@ function renderPareto(){
   if(!state.archive.length){
     const c=makeChart('chart-pareto'); c.text(c.W/2,c.H/2,'尚无 Pareto 解，请先运行优化',{color:'#9ca3af'});
     $('legend-pareto').innerHTML='';
-    renderDiagnosis(); return;
+    return;
   }
   const objIdx=cfg.objIdx;
-  if(paretoView==='3d'&&objIdx.length>=3){ renderPareto3D(); renderDiagnosis(); return; }
-  if(paretoView==='pc'&&objIdx.length>=3){ renderParetoPC(); renderDiagnosis(); return; }
+  if(paretoView==='3d'&&objIdx.length>=3){ renderPareto3D(); return; }
+  if(paretoView==='pc'&&objIdx.length>=3){ renderParetoPC(); return; }
   if(paretoView!=='2d') paretoView='2d';
-  renderPareto2D(); renderDiagnosis();
+  renderPareto2D();
 }
 function renderPareto2D(){
   const cfg=state.cfg;
